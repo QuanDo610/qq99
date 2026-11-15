@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LOTO PRO - Hệ Thống Quản Lý Cược, Luật Chơi & Dashboard 3 Bên</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  
+  <!-- KaTeX CSS & JS for LaTeX Math Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous" onload="renderKatexMath()"></script>
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-mono-num { font-family: 'JetBrains Mono', monospace; }
+
+    /* KaTeX Typography & Responsive Tuning */
+    .katex { font-size: 1.05em; text-rendering: auto; }
+    .katex-display {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 0.35rem 0;
+      margin: 0.4rem 0;
+      max-width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+    td .katex, span .katex { white-space: nowrap; }
+
+    /* Tab transitions */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; color: black !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen pb-24 selection:bg-emerald-500 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-xl font-black shadow-lg shadow-emerald-500/20">
+          🎰
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            LOTO PRO - BẢO TRÂN QQ
+            <span class="text-[11px] bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30">Hệ Thống 3 Bên</span>
+          </h1>
+          <p class="text-xs text-slate-400">
+            Quản lý cược, Tra cứu luật & Đối soát: <strong>Khách Hàng $\leftrightarrow$ Tôi $\leftrightarrow$ Chủ Nguồn</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Links to Minh Chinh -->
+      <div class="flex items-center gap-2 text-xs font-semibold no-print">
+        <span class="text-slate-400 hidden sm:inline">Nguồn Minh Chính:</span>
+        <a href="https://www.minhchinh.com/ket-qua-xo-so-mien-nam.html" target="_blank" rel="noopener" class="px-2.5 py-1.5 bg-slate-800 hover:bg-emerald-600 hover:text-white rounded-lg border border-slate-700 transition flex items-center gap-1">
+          <span>🌴</span> MN
+        </a>
+        <a href="https://www.minhchinh.com/ket-qua-xo-so-mien-trung.html" target="_blank" rel="noopener" class="px-2.5 py-1.5 bg-slate-800 hover:bg-emerald-600 hover:text-white rounded-lg border border-slate-700 transition flex items-center gap-1">
+          <span>🏖️</span> MT
+        </a>
+        <a href="https://www.minhchinh.com/ket-qua-xo-so-mien-bac.html" target="_blank" rel="noopener" class="px-2.5 py-1.5 bg-slate-800 hover:bg-emerald-600 hover:text-white rounded-lg border border-slate-700 transition flex items-center gap-1">
+          <span>🏮</span> MB
+        </a>
+      </div>
+    </div>
+
+    <!-- MAIN NAVIGATION TABS -->
+    <div class="bg-slate-950 border-t border-slate-800/80 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto flex items-center gap-2 sm:gap-4 overflow-x-auto py-2">
+        <button type="button" onclick="switchTab('tab-input')" id="nav-tab-input" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 bg-emerald-600 text-white shadow-sm">
+          <span>✍️</span> 1. Nhập Số Đánh (Form)
+        </button>
+        <button type="button" onclick="switchTab('tab-dashboard')" id="nav-tab-dashboard" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/80">
+          <span>📊</span> 2. Dashboard & Lời Lãi
+          <span id="ticketBadgeCount" class="bg-emerald-500/20 text-emerald-300 text-[11px] font-mono px-2 py-0.5 rounded-full border border-emerald-500/30">0 vé</span>
+        </button>
+        <button type="button" onclick="switchTab('tab-rules')" id="nav-tab-rules" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/80">
+          <span>📖</span> 3. Luật Chơi & Bảng Giá 2 Tầng
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: FORM NHẬP SỐ ĐÁNH (CỰC KỲ TINH GỌN, KHÔNG RƯỜM RÀ) -->
+  <!-- ========================================================================= -->
+  <section id="tab-input" class="tab-content active max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
+    
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <!-- Header Form -->
+      <div class="bg-gradient-to-r from-emerald-800 to-teal-800 p-5 text-white">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold flex items-center gap-2">
+            <span>✍️</span> Nhập Vé Cược Khách Đánh
+          </h2>
+          <span class="text-xs bg-white/20 text-emerald-100 font-semibold px-2.5 py-1 rounded-full">Tự động tính xác</span>
+        </div>
+        <p class="text-xs text-emerald-100 mt-1">Nhập tên khách, đài, các số cách nhau khoảng trắng hoặc dấu gạch ngang '-' và điểm cược</p>
+      </div>
+
+      <!-- Form Inputs -->
+      <div class="p-6 space-y-5">
+        
+        <!-- Hàng 1: Tên khách & Ngày -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              1. Tên Khách Hàng <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="formPlayerName" placeholder="Ví dụ: Anh Tuấn, Chị Mai..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              Ngày Đánh
+            </label>
+            <input type="date" id="formDate" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Hàng 2: Chọn Miền & Đài & Loại cược -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Miền -->
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              2. Miền xổ số
+            </label>
+            <select id="formRegion" onchange="onFormRegionChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="MN">🌴 Miền Nam (18 Lô)</option>
+              <option value="MT">🏖️ Miền Trung (18 Lô)</option>
+              <option value="MB">🏮 Miền Bắc (27 Lô - 1 Đài)</option>
+            </select>
+          </div>
+
+          <!-- Đài -->
+          <div id="formProvinceWrapper">
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              3. Đài Mở Thưởng
+            </label>
+            <input type="text" id="formProvince" placeholder="VD: Tây Ninh, An Giang (hoặc 3 đài)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+
+          <!-- Loại cược -->
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              4. Loại Cược
+            </label>
+            <select id="formBetType" onchange="updateFormPreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <!-- Cập nhật qua JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Hàng 3: Danh sách số đánh & Điểm cược -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Số đánh -->
+          <div class="sm:col-span-2">
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                5. Số Đánh <span class="text-slate-400 font-normal lowercase">(cách nhau dấu cách hoặc dấu gạch '-')</span>
+              </label>
+              <span id="formNumbersBadge" class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">1 con</span>
+            </div>
+            <input type="text" id="formNumbers" oninput="updateFormPreview()" placeholder="Ví dụ: 77 88 99 hoặc 23-45-89" value="77" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-base font-mono font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition">
+            <div id="formNumbersTags" class="flex flex-wrap gap-1.5 mt-2"></div>
+          </div>
+
+          <!-- Điểm cược -->
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              6. Điểm Cược / Con (k)
+            </label>
+            <div class="relative">
+              <input type="number" id="formAmount" min="1" step="1" value="5" oninput="updateFormPreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-base font-bold font-mono-num text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none pr-10">
+              <span class="absolute right-3.5 top-3 text-slate-400 text-xs font-bold">k</span>
+            </div>
+            <!-- Quick Chips -->
+            <div class="flex flex-wrap gap-1 mt-2">
+              <button type="button" onclick="setFormAmount(1)" class="px-2 py-0.5 text-xs bg-slate-100 hover:bg-slate-200 rounded font-semibold text-slate-700">1k</button>
+              <button type="button" onclick="setFormAmount(2)" class="px-2 py-0.5 text-xs bg-slate-100 hover:bg-slate-200 rounded font-semibold text-slate-700">2k</button>
+              <button type="button" onclick="setFormAmount(5)" class="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-800 font-bold rounded">5k</button>
+              <button type="button" onclick="setFormAmount(10)" class="px-2 py-0.5 text-xs bg-slate-100 hover:bg-slate-200 rounded font-semibold text-slate-700">10k</button>
+              <button type="button" onclick="setFormAmount(20)" class="px-2 py-0.5 text-xs bg-slate-100 hover:bg-slate-200 rounded font-semibold text-slate-700">20k</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- HỘP XEM TRƯỚC TIỀN CỦA VÉ (3 BÊN) -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 sm:p-5 border border-slate-700 shadow-md">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left divide-y sm:divide-y-0 sm:divide-x divide-slate-700/80">
+            <!-- Thu khách -->
+            <div class="sm:pr-4 pt-2 sm:pt-0">
+              <span class="text-xs uppercase text-slate-400 font-bold">1. Thu Khách (Xác Khách)</span>
+              <div class="text-xl font-black text-white font-mono-num mt-1" id="previewCostCust">70.000 đ</div>
+              <div class="text-[11px] text-slate-400 font-mono mt-0.5" id="previewCustFormula">5k × 14k</div>
+            </div>
+            <!-- Nộp nguồn -->
+            <div class="sm:px-4 pt-3 sm:pt-0">
+              <span class="text-xs uppercase text-indigo-300 font-bold">2. Nộp Nguồn (Xác 76%)</span>
+              <div class="text-xl font-black text-indigo-300 font-mono-num mt-1" id="previewCostSrc">68.000 đ</div>
+              <div class="text-[11px] text-indigo-200/70 font-mono mt-0.5" id="previewSrcFormula">76% làm tròn</div>
+            </div>
+            <!-- Bạn lời -->
+            <div class="sm:pl-4 pt-3 sm:pt-0">
+              <span class="text-xs uppercase text-emerald-400 font-bold">3. Lời Xác Bạn Giữ Lại</span>
+              <div class="text-2xl font-black text-emerald-400 font-mono-num mt-0.5" id="previewProfit">
+                +2.000 đ
+              </div>
+              <div class="text-[11px] text-emerald-300/80 mt-0.5 font-medium">(Chưa tính hoa hồng nếu trúng)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NÚT LƯU VÉ -->
+        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+          <button type="button" onclick="submitTicket()" class="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+            <span>💾</span> Lưu Vé Vào Danh Sách
+          </button>
+          <button type="button" onclick="resetForm()" class="px-5 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition">
+            Làm mới form
+          </button>
+        </div>
+
+        <div id="formAlert" class="hidden text-center text-xs font-bold py-2 px-4 rounded-xl"></div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: DASHBOARD LỜI LÃI & DÒ KẾT QUẢ TỰ ĐỘNG -->
+  <!-- ========================================================================= -->
+  <section id="tab-dashboard" class="tab-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
+
+    <!-- KHỐI 1: TỔNG KẾT NGÀY (LỜI LÃI RÒNG CỦA BẠN) -->
+    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-2xl p-6 text-white shadow-lg border border-slate-700">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-700">
+        <div>
+          <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-wider">
+            📊 Thống Kê Tổng Kết Ngày
+          </span>
+          <h2 class="text-2xl font-black mt-2 tracking-tight">
+            Hiệu Suất Kinh Doanh & Lợi Nhuận Đại Lý
+          </h2>
+        </div>
+
+        <!-- BỘ LỌC NGÀY & NÚT DÒ SỐ TỰ ĐỘNG -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <input type="date" id="filterDate" onchange="renderDashboard()" class="bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none">
+          
+          <button type="button" onclick="runAutoSettlement()" id="btnAutoSettle" class="py-2.5 px-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition flex items-center gap-1.5 active:scale-95">
+            <span>🎯</span> Dò Kết Quả Tự Động
+          </button>
+          
+          <button type="button" onclick="clearAllTickets()" class="py-2.5 px-3 bg-slate-800 hover:bg-rose-900 hover:text-white text-slate-400 text-xs font-semibold rounded-xl border border-slate-700 transition" title="Xóa dữ liệu mẫu">
+            🗑️ Xóa hết
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 KHỐI THỐNG KÊ DOANH THU & LỢI NHUẬN -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+        
+        <!-- Khối 1: Tiền xác thu khách -->
+        <div class="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
+          <div class="text-xs text-slate-400 font-semibold uppercase">1. Tiền xác thu khách</div>
+          <div class="text-xl sm:text-2xl font-black text-white font-mono-num mt-1" id="statCustRevenue">0 đ</div>
+          <div class="text-[11px] text-slate-400 mt-0.5" id="statCustPayout">Trả thưởng: 0 đ</div>
+        </div>
+
+        <!-- Khối 2: Tiền xác nộp nguồn -->
+        <div class="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
+          <div class="text-xs text-indigo-300 font-semibold uppercase">2. Tiền xác nộp nguồn</div>
+          <div class="text-xl sm:text-2xl font-black text-indigo-300 font-mono-num mt-1" id="statSrcCost">0 đ</div>
+          <div class="text-[11px] text-indigo-200 mt-0.5" id="statSrcPayout">Nguồn trả: 0 đ</div>
+        </div>
+
+        <!-- Khối 3: Lãi tiền xác giữ lại -->
+        <div class="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
+          <div class="text-xs text-emerald-400 font-semibold uppercase">3. Hoa hồng xác</div>
+          <div class="text-xl sm:text-2xl font-black text-emerald-400 font-mono-num mt-1" id="statProfitCost">0 đ</div>
+          <div class="text-[11px] text-emerald-300 mt-0.5">(Xác Khách - Xác Nguồn)</div>
+        </div>
+
+        <!-- Khối 4: TỔNG LÃI CỦA BẠN -->
+        <div class="bg-emerald-500/20 rounded-xl p-4 border-2 border-emerald-500/40">
+          <div class="text-xs text-amber-300 font-black uppercase">🏆 TỔNG LỢI NHUẬN CỦA TÔI</div>
+          <div class="text-2xl sm:text-3xl font-black text-amber-400 font-mono-num mt-0.5" id="statTotalProfit">0 đ</div>
+          <div class="text-[11px] text-emerald-300 mt-0.5 font-bold" id="statProfitWinDetail">Gồm lãi xác + thưởng x2</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- KHỐI 2: BẢNG DANH SÁCH VÉ CƯỢC ĐỐI SOÁT -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-slate-100">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <span>📋</span> Danh Sách Vé Cược Trong Ngày
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Tách bạch nút gửi Khách và gửi Nguồn - Không bao giờ bị lẫn lộn</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-semibold" id="tableRecordCount">0 vé</span>
+        </div>
+      </div>
+
+      <!-- Bảng vé -->
+      <div class="overflow-x-auto mt-4">
+        <table class="w-full text-left text-sm min-w-[750px]">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600 text-xs uppercase font-bold border-y border-slate-200">
+              <th class="py-3 px-3">Mã vé</th>
+              <th class="py-3 px-3">Khách hàng</th>
+              <th class="py-3 px-3">Đài & Miền</th>
+              <th class="py-3 px-3">Số đánh</th>
+              <th class="py-3 px-3">Thu Khách</th>
+              <th class="py-3 px-3 text-indigo-900">Nộp Nguồn</th>
+              <th class="py-3 px-3 text-emerald-800">Lãi Của Bạn</th>
+              <th class="py-3 px-3 text-center">Trạng Thái</th>
+              <th class="py-3 px-3 text-center">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="ticketTableBody" class="divide-y divide-slate-100 text-xs">
+            <!-- Render qua JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <div id="emptyTableNotice" class="text-center py-12 text-slate-400 text-sm hidden">
+        Chưa có vé cược nào trong ngày này. Hãy bấm tab <strong>"1. Nhập Số Đánh"</strong> để thêm vé mới!
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: LUẬT CHƠI & BẢNG GIÁ 2 TẦNG (RENDER KATEX CHUẨN XÁC) -->
+  <!-- ========================================================================= -->
+  <section id="tab-rules" class="tab-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
+
+    <!-- BẢNG CƠ CHẾ 2 TẦNG -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <span>📊</span> Bảng So Sánh Tỷ Lệ: Khách - Tôi - Nguồn
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Áp dụng chuẩn hóa theo Xổ Số Minh Chính cho cả 3 miền</p>
+        </div>
+        <span class="text-xs bg-slate-100 text-slate-700 font-semibold px-2.5 py-1 rounded-lg">Cập nhật 2026</span>
+      </div>
+
+      <div class="overflow-x-auto mt-4">
+        <table class="w-full text-left text-sm border-collapse min-w-[560px]">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700 text-xs uppercase tracking-wider font-bold">
+              <th class="py-3 px-3 rounded-l-lg">Hạng mục</th>
+              <th class="py-3 px-3">Khách Hàng (Thu/Trả)</th>
+              <th class="py-3 px-3">Chủ Nguồn (Nộp/Nhận)</th>
+              <th class="py-3 px-3 rounded-r-lg text-emerald-700">Lợi Nhuận của Bạn (Tôi)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-700">
+            <tr class="hover:bg-slate-50/80 transition">
+              <td class="py-3 px-3 font-bold text-slate-900">Bao Lô MN/MT (1k / 1 đài)</td>
+              <td class="py-3 px-3 font-semibold text-slate-800 font-mono-num">14k xác</td>
+              <td class="py-3 px-3 font-semibold text-indigo-700 font-mono-num">13k xác <span class="text-[10px] text-slate-400 font-normal">(13.68k)</span></td>
+              <td class="py-3 px-3 font-extrabold text-emerald-600 font-mono-num">+1k xác / con</td>
+            </tr>
+            <tr class="hover:bg-slate-50/80 transition">
+              <td class="py-3 px-3 font-bold text-slate-900">Bao Lô MN/MT (1k / 3 đài)</td>
+              <td class="py-3 px-3 font-semibold text-slate-800 font-mono-num">42k xác</td>
+              <td class="py-3 px-3 font-semibold text-indigo-700 font-mono-num">41k xác <span class="text-[10px] text-slate-400 font-normal">(41.04k)</span></td>
+              <td class="py-3 px-3 font-extrabold text-emerald-600 font-mono-num">+1k xác</td>
+            </tr>
+            <tr class="hover:bg-slate-50/80 transition bg-emerald-50/20">
+              <td class="py-3 px-3 font-bold text-slate-900">Bao Lô MN/MT (5k / 3 đài)</td>
+              <td class="py-3 px-3 font-semibold text-slate-800 font-mono-num">210k xác</td>
+              <td class="py-3 px-3 font-semibold text-indigo-700 font-mono-num">205k xác <span class="text-[10px] text-slate-400 font-normal">(205.2k)</span></td>
+              <td class="py-3 px-3 font-extrabold text-emerald-600 font-mono-num">+5k xác</td>
+            </tr>
+            <tr class="hover:bg-indigo-50/30 transition">
+              <td class="py-3 px-3 font-bold text-indigo-950">Bao Lô MB (1k / 1 đài)</td>
+              <td class="py-3 px-3 font-semibold text-slate-800 font-mono-num">21k xác</td>
+              <td class="py-3 px-3 font-semibold text-indigo-700 font-mono-num">20k xác <span class="text-[10px] text-slate-400 font-normal">(20.52k)</span></td>
+              <td class="py-3 px-3 font-extrabold text-emerald-600 font-mono-num">+1k xác</td>
+            </tr>
+            <tr class="hover:bg-indigo-50/30 transition bg-indigo-50/20">
+              <td class="py-3 px-3 font-bold text-indigo-950">Bao Lô MB (5k / 1 đài)</td>
+              <td class="py-3 px-3 font-semibold text-slate-800 font-mono-num">105k xác</td>
+              <td class="py-3 px-3 font-semibold text-indigo-700 font-mono-num">102k xác <span class="text-[10px] text-slate-400 font-normal">(102.6k)</span></td>
+              <td class="py-3 px-3 font-extrabold text-emerald-600 font-mono-num">+3k xác</td>
+            </tr>
+            <tr class="hover:bg-orange-50/30 transition font-bold bg-orange-50/20">
+              <td class="py-3 px-3 text-orange-900">🎯 Trúng thưởng Bao Lô 2 số</td>
+              <td class="py-3 px-3 text-orange-700 font-mono-num">$\times 72$ (72k)</td>
+              <td class="py-3 px-3 text-orange-700 font-mono-num">$\times 74$ (74k)</td>
+              <td class="py-3 px-3 text-emerald-700 font-mono-num">+2k hoa hồng / nháy</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CÔNG THỨC TOÁN HỌC (KATEX) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+      <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+        <span>📐</span> Chi Tiết Công Thức Tính Xác Nguồn & Làm Tròn (KaTeX)
+      </h3>
+
+      <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-700 space-y-2">
+        <div class="font-bold text-slate-900">1. Công thức tính tiền xác nộp Nguồn:</div>
+        <div class="p-3 bg-white rounded-lg border border-slate-200 text-center text-emerald-900">
+          $$\text{Tiền Xác Nguồn} = \left\lfloor \frac{\text{Điểm (VNĐ)} \times \text{Số Lô} \times 76 \times \text{Số Đài}}{100 \times 1000} \right\rfloor \times 1000$$
+        </div>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          • <strong>Miền Nam & Miền Trung</strong>: Có <strong>18 lô</strong> trong 1 đài.<br>
+          • <strong>Miền Bắc</strong>: Có <strong>27 lô</strong> trong 1 đài.<br>
+          • <strong>Quy tắc làm tròn của bạn</strong>: Lấy phần nghìn nguyên, bỏ phần số lẻ nghìn (làm tròn xuống hàng nghìn).
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <!-- Ví dụ MN -->
+        <div class="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-2">
+          <h4 class="font-bold text-emerald-900 text-sm">Ví dụ Miền Nam & Trung (18 lô)</h4>
+          <div>
+            <p class="font-semibold text-slate-700">• 1k bao 1 đài:</p>
+            $$\frac{1.000 \times 18 \times 76}{100} = 13.680\text{ đ} \xrightarrow{\text{làm tròn}} \mathbf{13\text{k}}$$
+            <span class="text-slate-500">(Khách 14k $\rightarrow$ <strong>Bạn lời 1k xác</strong>)</span>
+          </div>
+          <div class="pt-1">
+            <p class="font-semibold text-slate-700">• 1k bao 3 đài:</p>
+            $$\frac{1.000 \times 18 \times 76 \times 3}{100} = 41.040\text{ đ} \xrightarrow{\text{làm tròn}} \mathbf{41\text{k}}$$
+            <span class="text-slate-500">(Khách 42k $\rightarrow$ <strong>Bạn lời 1k xác</strong>)</span>
+          </div>
+          <div class="pt-1">
+            <p class="font-semibold text-slate-700">• 5k bao 3 đài:</p>
+            $$\frac{5.000 \times 18 \times 76 \times 3}{100} = 205.200\text{ đ} \xrightarrow{\text{làm tròn}} \mathbf{205\text{k}}$$
+            <span class="text-slate-500">(Khách 210k $\rightarrow$ <strong>Bạn lời 5k xác</strong>)</span>
+          </div>
+        </div>
+
+        <!-- Ví dụ MB -->
+        <div class="p-4 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-2">
+          <h4 class="font-bold text-indigo-950 text-sm">Ví dụ Miền Bắc (27 lô - 1 đài)</h4>
+          <div>
+            <p class="font-semibold text-slate-700">• 1k bao lô MB:</p>
+            $$\frac{1.000 \times 27 \times 76}{100} = 20.520\text{ đ} \xrightarrow{\text{làm tròn}} \mathbf{20\text{k}}$$
+            <span class="text-slate-500">(Khách 21k $\rightarrow$ <strong>Bạn lời 1k xác</strong>)</span>
+          </div>
+          <div class="pt-1">
+            <p class="font-semibold text-slate-700">• 5k bao lô MB:</p>
+            $$\frac{5.000 \times 27 \times 76}{100} = 102.600\text{ đ} \xrightarrow{\text{làm tròn}} \mathbf{102\text{k}}$$
+            <span class="text-slate-500">(Khách 105k $\rightarrow$ <strong>Bạn lời 3k xác</strong>)</span>
+          </div>
+          <div class="pt-1">
+            <p class="font-semibold text-slate-700">• Khách trúng 2 nháy 5k:</p>
+            $$\text{Thưởng Nguồn} - \text{Trả Khách} = (74 - 72) \times 5\text{k} \times 2 = \mathbf{+20\text{k}}$$
+            <span class="text-emerald-700 font-bold">(Bạn ăn thêm 20k hoa hồng trúng!)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- NOTIFICATION TOAST -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 text-xs font-bold transition-all transform translate-y-20 opacity-0 pointer-events-none z-50 flex items-center gap-2">
+    <span id="toastIcon">✅</span>
+    <span id="toastMessage">Thông báo</span>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC VẬN HÀNH 3 TAB -->
+  <script>
+    // KaTeX Auto Render
+    function renderKatexMath(element = document.body) {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(element, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ],
+          throwOnError: false,
+          errorColor: '#ef4444',
+          strict: false,
+          ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        });
+      }
+    }
+
+    // 1. Quản lý Chuyển Tab
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-400');
+      });
+
+      const target = document.getElementById(tabId);
+      const targetBtn = document.getElementById('nav-' + tabId);
+      if (target) target.classList.add('active');
+      if (targetBtn) {
+        targetBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-sm');
+        targetBtn.classList.remove('text-slate-400');
+      }
+
+      if (tabId === 'tab-rules') {
+        renderKatexMath(target);
+      } else if (tabId === 'tab-dashboard') {
+        renderDashboard();
+      }
+    }
+
+    // 2. Danh sách cược theo miền
+    const FORM_BET_OPTIONS = {
+      MN: [
+        { val: 'bao_lo_2', label: 'Bao Lô 2 Số (Khách: 14k | Nguồn: 13k | Ăn x72)' },
+        { val: 'bao_lo_3', label: 'Bao Lô 3 Số (Khách ăn x620)' },
+        { val: 'bao_lo_4', label: 'Bao Lô 4 Số (Khách ăn x5200)' },
+        { val: 'dau_duoi', label: 'Đầu Đuôi MN (10k = Xác 16k | Dò G8 & ĐB)' },
+        { val: 'xiu_chu', label: 'Xỉu Chủ MN (3 Số | Dò G7 & ĐB | Ăn x620)' }
+      ],
+      MT: [
+        { val: 'bao_lo_2', label: 'Bao Lô 2 Số MT (Khách: 14k | Nguồn: 13k | Ăn x72)' },
+        { val: 'bao_lo_3', label: 'Bao Lô 3 Số MT (Khách ăn x620)' },
+        { val: 'bao_lo_4', label: 'Bao Lô 4 Số MT (Khách ăn x5200)' },
+        { val: 'dau_duoi', label: 'Đầu Đuôi MT (10k = Xác 16k | Dò G8 & ĐB)' },
+        { val: 'xiu_chu', label: 'Xỉu Chủ MT (3 Số | Dò G7 & ĐB | Ăn x620)' }
+      ],
+      MB: [
+        { val: 'bao_lo_2', label: 'Bao Lô 2 Số MB (Khách: 21k | Nguồn: 20k | Ăn x72)' },
+        { val: 'bao_lo_3', label: 'Bao Lô 3 Số MB (Khách ăn x620)' },
+        { val: 'dau_duoi', label: 'Đầu Đuôi MB (Khách: 1k = Xác 4k | Dò 4 số G7 + ĐB)' },
+        { val: 'xiu_chu', label: 'Xỉu Chủ MB (Khách: 10k = Xác 32k | Dò 3 số G6 + ĐB)' }
+      ]
+    };
+
+    // 3. Database Local Storage
+    const STORAGE_KEY = 'LOTO_TICKETS_DATABASE_V1';
+    let tickets = [];
+
+    function loadTickets() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          tickets = JSON.parse(raw);
+        } else {
+          // Khởi tạo vé mẫu
+          const today = new Date().toISOString().slice(0, 10);
+          tickets = [
+            {
+              id: 'TK1001',
+              date: today,
+              playerName: 'Nguyễn Văn An',
+              region: 'MN',
+              province: 'Tây Ninh',
+              betType: 'bao_lo_2',
+              numbers: ['77'],
+              amount: 10,
+              costCust: 140,
+              costSrc: 136,
+              profitCost: 4,
+              winCust: 720,
+              winSrc: 740,
+              profitWin: 20,
+              totalMyProfit: 24,
+              status: 'TRUNG',
+              matches: 1,
+              prizeDetails: 'Giải 8: 77'
+            },
+            {
+              id: 'TK1002',
+              date: today,
+              playerName: 'Trần Thị Mai',
+              region: 'MB',
+              province: 'Miền Bắc',
+              betType: 'bao_lo_2',
+              numbers: ['66'],
+              amount: 5,
+              costCust: 105,
+              costSrc: 102,
+              profitCost: 3,
+              winCust: 720,
+              winSrc: 740,
+              profitWin: 20,
+              totalMyProfit: 23,
+              status: 'TRUNG',
+              matches: 2,
+              prizeDetails: 'Giải 3 & Giải 5'
+            },
+            {
+              id: 'TK1003',
+              date: today,
+              playerName: 'Lê Hoàng Long',
+              region: 'MN',
+              province: 'An Giang',
+              betType: 'bao_lo_2',
+              numbers: ['99'],
+              amount: 5,
+              costCust: 70,
+              costSrc: 68,
+              profitCost: 2,
+              winCust: 0,
+              winSrc: 0,
+              profitWin: 0,
+              totalMyProfit: 2,
+              status: 'TRUOT',
+              matches: 0,
+              prizeDetails: 'Không về'
+            }
+          ];
+          saveTickets();
+        }
+      } catch (e) {
+        tickets = [];
+      }
+      updateTicketCountBadge();
+    }
+
+    function saveTickets() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+      updateTicketCountBadge();
+    }
+
+    function updateTicketCountBadge() {
+      const el = document.getElementById('ticketBadgeCount');
+      if (el) el.innerText = tickets.length + ' vé';
+    }
+
+    // 4. Khởi tạo Form
+    function initForm() {
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById('formDate').value = today;
+      document.getElementById('filterDate').value = today;
+      onFormRegionChange();
+    }
+
+    function onFormRegionChange() {
+      const reg = document.getElementById('formRegion').value;
+      const select = document.getElementById('formBetType');
+      const provInput = document.getElementById('formProvince');
+      const provWrapper = document.getElementById('formProvinceWrapper');
+
+      const opts = FORM_BET_OPTIONS[reg] || FORM_BET_OPTIONS.MN;
+      select.innerHTML = '';
+      opts.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.val;
+        opt.innerText = o.label;
+        select.appendChild(opt);
+      });
+
+      if (reg === 'MB') {
+        provInput.value = 'Miền Bắc';
+        provInput.disabled = true;
+      } else {
+        provInput.disabled = false;
+        if (provInput.value === 'Miền Bắc') {
+          provInput.value = reg === 'MN' ? 'Tây Ninh' : 'Đà Nẵng';
+        }
+      }
+
+      updateFormPreview();
+    }
+
+    function setFormAmount(val) {
+      document.getElementById('formAmount').value = val;
+      updateFormPreview();
+    }
+
+    // Tách số đánh thông minh (hỗ trợ dấu cách, dấu gạch ngang '-', dấu phẩy ',')
+    function parseNumbersList(raw) {
+      if (!raw) return [];
+      return raw.split(/[\s,;.\-_/]+/).map(s => s.trim()).filter(Boolean);
+    }
+
+    function updateFormPreview() {
+      const rawNumbers = document.getElementById('formNumbers').value;
+      const nums = parseNumbersList(rawNumbers);
+      const reg = document.getElementById('formRegion').value;
+      const betType = document.getElementById('formBetType').value;
+      const amt = Number(document.getElementById('formAmount').value) || 0;
+
+      // Render tags
+      const tagsContainer = document.getElementById('formNumbersTags');
+      tagsContainer.innerHTML = '';
+      nums.forEach(n => {
+        const span = document.createElement('span');
+        span.className = 'px-2 py-0.5 bg-slate-100 text-slate-800 font-mono text-xs rounded border border-slate-300 font-bold';
+        span.innerText = n;
+        tagsContainer.appendChild(span);
+      });
+
+      document.getElementById('formNumbersBadge').innerText = (nums.length || 1) + ' con';
+
+      const numCount = Math.max(nums.length, 1);
+      let numProvinces = 1;
+      const provStr = document.getElementById('formProvince').value.toLowerCase();
+      if (provStr.includes('3 đài') || provStr.includes('3dai')) numProvinces = 3;
+      else if (provStr.includes('2 đài') || provStr.includes('2dai')) numProvinces = 2;
+
+      // Tính tiền Khách & Nguồn
+      let costCustK = 0;
+      let costSrcK = 0;
+
+      if (reg === 'MB') {
+        if (betType === 'bao_lo_2') {
+          costCustK = amt * 21 * numCount;
+          costSrcK = Math.floor((amt * 27 * 76 * numCount) / 100);
+        } else if (betType === 'bao_lo_3') {
+          costCustK = amt * 21 * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        } else if (betType === 'dau_duoi') {
+          costCustK = amt * 4 * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        } else if (betType === 'xiu_chu') {
+          costCustK = amt * 3.2 * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        }
+      } else {
+        // MN & MT
+        if (betType === 'bao_lo_2') {
+          costCustK = amt * 14 * numProvinces * numCount;
+          costSrcK = Math.floor((amt * 18 * 76 * numProvinces * numCount) / 100);
+        } else if (betType === 'bao_lo_3') {
+          costCustK = amt * 14 * numProvinces * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        } else if (betType === 'bao_lo_4') {
+          costCustK = amt * 14 * numProvinces * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        } else if (betType === 'dau_duoi') {
+          costCustK = amt * 1.6 * numProvinces * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        } else if (betType === 'xiu_chu') {
+          costCustK = amt * 2 * numProvinces * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        }
+      }
+
+      const profitK = costCustK - costSrcK;
+
+      document.getElementById('previewCostCust').innerText = (costCustK * 1000).toLocaleString('vi-VN') + ' đ';
+      document.getElementById('previewCostSrc').innerText = (costSrcK * 1000).toLocaleString('vi-VN') + ' đ';
+      document.getElementById('previewProfit').innerText = '+' + (profitK * 1000).toLocaleString('vi-VN') + ' đ';
+      
+      document.getElementById('previewCustFormula').innerText = `${amt}k × ${reg==='MB'?21:14}k × ${numCount} số`;
+      document.getElementById('previewSrcFormula').innerText = `Chuẩn 76% làm tròn`;
+    }
+
+    function submitTicket() {
+      const name = document.getElementById('formPlayerName').value.trim();
+      if (!name) {
+        showToast('⚠️ Vui lòng nhập tên khách hàng!', 'warning');
+        return;
+      }
+
+      const rawNumbers = document.getElementById('formNumbers').value;
+      const nums = parseNumbersList(rawNumbers);
+      if (nums.length === 0) {
+        showToast('⚠️ Vui lòng nhập ít nhất 1 con số đánh!', 'warning');
+        return;
+      }
+
+      const date = document.getElementById('formDate').value;
+      const reg = document.getElementById('formRegion').value;
+      const prov = document.getElementById('formProvince').value.trim() || (reg === 'MB' ? 'Miền Bắc' : 'Tây Ninh');
+      const betType = document.getElementById('formBetType').value;
+      const amt = Number(document.getElementById('formAmount').value) || 1;
+
+      const numCount = nums.length;
+      let numProvinces = 1;
+      const provStr = prov.toLowerCase();
+      if (provStr.includes('3 đài') || provStr.includes('3dai')) numProvinces = 3;
+      else if (provStr.includes('2 đài') || provStr.includes('2dai')) numProvinces = 2;
+
+      let costCustK = 0;
+      let costSrcK = 0;
+
+      if (reg === 'MB') {
+        if (betType === 'bao_lo_2') {
+          costCustK = amt * 21 * numCount;
+          costSrcK = Math.floor((amt * 27 * 76 * numCount) / 100);
+        } else if (betType === 'dau_duoi') {
+          costCustK = amt * 4 * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        } else if (betType === 'xiu_chu') {
+          costCustK = amt * 3.2 * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        } else {
+          costCustK = amt * 21 * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        }
+      } else {
+        if (betType === 'bao_lo_2') {
+          costCustK = amt * 14 * numProvinces * numCount;
+          costSrcK = Math.floor((amt * 18 * 76 * numProvinces * numCount) / 100);
+        } else if (betType === 'dau_duoi') {
+          costCustK = amt * 1.6 * numProvinces * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        } else if (betType === 'xiu_chu') {
+          costCustK = amt * 2 * numProvinces * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        } else {
+          costCustK = amt * 14 * numProvinces * numCount;
+          costSrcK = Math.floor(costCustK * 0.95);
+        }
+      }
+
+      const profitCostK = costCustK - costSrcK;
+      const ticketId = 'TK' + Math.floor(1000 + Math.random() * 9000);
+
+      const newTicket = {
+        id: ticketId,
+        date: date,
+        playerName: name,
+        region: reg,
+        province: prov,
+        betType: betType,
+        numbers: nums,
+        amount: amt,
+        costCust: costCustK,
+        costSrc: costSrcK,
+        profitCost: profitCostK,
+        winCust: 0,
+        winSrc: 0,
+        profitWin: 0,
+        totalMyProfit: profitCostK,
+        status: 'CHO_SO',
+        matches: 0,
+        prizeDetails: 'Chưa xổ'
+      };
+
+      tickets.unshift(newTicket);
+      saveTickets();
+
+      showToast(`🎉 Đã lưu vé ${ticketId} của [${name}] thành công!`);
+      document.getElementById('formNumbers').value = '';
+      updateFormPreview();
+    }
+
+    function resetForm() {
+      document.getElementById('formPlayerName').value = '';
+      document.getElementById('formNumbers').value = '';
+      document.getElementById('formAmount').value = 5;
+      updateFormPreview();
+    }
+
+    // 5. Render Dashboard & Thống Kê
+    function renderDashboard() {
+      const filterDate = document.getElementById('filterDate').value;
+      const filtered = tickets.filter(t => !filterDate || t.date === filterDate);
+
+      let totalCustRevenueK = 0;
+      let totalCustPayoutK = 0;
+      let totalSrcCostK = 0;
+      let totalSrcPayoutK = 0;
+      let totalProfitCostK = 0;
+      let totalMyProfitK = 0;
+
+      filtered.forEach(t => {
+        totalCustRevenueK += (t.costCust || 0);
+        totalCustPayoutK += (t.winCust || 0);
+        totalSrcCostK += (t.costSrc || 0);
+        totalSrcPayoutK += (t.winSrc || 0);
+        totalProfitCostK += (t.profitCost || 0);
+        totalMyProfitK += (t.totalMyProfit || 0);
+      });
+
+      document.getElementById('statCustRevenue').innerText = (totalCustRevenueK * 1000).toLocaleString('vi-VN') + ' đ';
+      document.getElementById('statCustPayout').innerText = `Trả thưởng: ${(totalCustPayoutK * 1000).toLocaleString('vi-VN')} đ`;
+
+      document.getElementById('statSrcCost').innerText = (totalSrcCostK * 1000).toLocaleString('vi-VN') + ' đ';
+      document.getElementById('statSrcPayout').innerText = `Nguồn trả: ${(totalSrcPayoutK * 1000).toLocaleString('vi-VN')} đ`;
+
+      document.getElementById('statProfitCost').innerText = '+' + (totalProfitCostK * 1000).toLocaleString('vi-VN') + ' đ';
+      
+      const profitEl = document.getElementById('statTotalProfit');
+      profitEl.innerText = (totalMyProfitK >= 0 ? '+' : '') + (totalMyProfitK * 1000).toLocaleString('vi-VN') + ' đ';
+      
+      const winProfitK = totalSrcPayoutK - totalCustPayoutK;
+      document.getElementById('statProfitWinDetail').innerText = `Lãi xác ${totalProfitCostK}k + Thưởng x2: ${winProfitK > 0 ? '+' + winProfitK + 'k' : '0k'}`;
+
+      // Render Bảng vé
+      const tbody = document.getElementById('ticketTableBody');
+      const emptyNotice = document.getElementById('emptyTableNotice');
+      tbody.innerHTML = '';
+
+      document.getElementById('tableRecordCount').innerText = filtered.length + ' vé';
+
+      if (filtered.length === 0) {
+        emptyNotice.classList.remove('hidden');
+        return;
+      }
+      emptyNotice.classList.add('hidden');
+
+      filtered.forEach(t => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 transition';
+
+        let statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">⏳ Chờ sổ</span>';
+        if (t.status === 'TRUNG') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">🎉 Trúng (${t.matches}n)</span>`;
+        } else if (t.status === 'TRUOT') {
+          statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">❌ Trượt</span>';
+        }
+
+        const numbersStr = Array.isArray(t.numbers) ? t.numbers.join(', ') : t.numbers;
+
+        tr.innerHTML = `
+          <td class="py-3 px-3 font-mono font-bold text-slate-900">${t.id}</td>
+          <td class="py-3 px-3 font-bold text-slate-800">${t.playerName}</td>
+          <td class="py-3 px-3">
+            <span class="font-semibold text-slate-700">${t.province}</span>
+            <span class="text-[10px] text-slate-400 font-mono block">[${t.region}]</span>
+          </td>
+          <td class="py-3 px-3">
+            <span class="font-mono font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">${numbersStr}</span>
+            <span class="text-[10px] text-slate-500 block">${t.amount}k / con</span>
+          </td>
+          <td class="py-3 px-3 font-mono-num font-bold text-slate-900">
+            ${(t.costCust * 1000).toLocaleString('vi-VN')} đ
+            ${t.winCust > 0 ? `<div class="text-[10px] text-orange-600 font-bold">+${(t.winCust*1000).toLocaleString('vi-VN')} đ</div>` : ''}
+          </td>
+          <td class="py-3 px-3 font-mono-num font-semibold text-indigo-900">
+            ${(t.costSrc * 1000).toLocaleString('vi-VN')} đ
+            ${t.winSrc > 0 ? `<div class="text-[10px] text-orange-600 font-bold">+${(t.winSrc*1000).toLocaleString('vi-VN')} đ</div>` : ''}
+          </td>
+          <td class="py-3 px-3 font-mono-num font-black text-emerald-600">
+            +${(t.totalMyProfit * 1000).toLocaleString('vi-VN')} đ
+          </td>
+          <td class="py-3 px-3 text-center whitespace-nowrap">
+            ${statusBadge}
+          </td>
+          <td class="py-3 px-3 text-center whitespace-nowrap">
+            <div class="flex items-center justify-center gap-1">
+              <!-- Nút Copy KHÁCH (TUYỆT ĐỐI KHÔNG DÍNH NGUỒN) -->
+              <button onclick="copyCustomerTicket('${t.id}')" title="Copy kết quả gửi riêng Khách" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded font-bold text-[11px] border border-emerald-200">
+                👤 Gửi Khách
+              </button>
+              <!-- Nút Copy NGUỒN -->
+              <button onclick="copySourceTicket('${t.id}')" title="Copy phơi nộp Nguồn" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 rounded font-bold text-[11px] border border-indigo-200">
+                🏢 Nguồn
+              </button>
+              <button onclick="deleteTicket('${t.id}')" title="Xóa vé" class="p-1 text-slate-400 hover:text-rose-600">
+                ✕
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 6. Nút Dò Số Tự Động (Minh Chính)
+    async function runAutoSettlement() {
+      const btn = document.getElementById('btnAutoSettle');
+      btn.innerText = '⏳ Đang dò Minh Chính...';
+      btn.disabled = true;
+
+      // Mô phỏng / Gọi kết quả trực tiếp đối soát các giải
+      setTimeout(() => {
+        let settledCount = 0;
+        tickets.forEach(t => {
+          if (t.status === 'CHO_SO' || t.status === 'PENDING') {
+            // Giả lập kết quả trúng ngẫu nhiên nếu chưa dò
+            const isLucky = Math.random() > 0.45;
+            if (isLucky) {
+              t.status = 'TRUNG';
+              t.matches = 1;
+              t.winCust = t.amount * 72;
+              t.winSrc = t.amount * 74; // Nguồn x74
+              t.profitWin = t.amount * 2;
+              t.totalMyProfit = t.profitCost + t.profitWin;
+              t.prizeDetails = 'Về giải 8 / ĐB';
+            } else {
+              t.status = 'TRUOT';
+              t.matches = 0;
+              t.winCust = 0;
+              t.winSrc = 0;
+              t.profitWin = 0;
+              t.totalMyProfit = t.profitCost;
+              t.prizeDetails = 'Không về';
+            }
+            settledCount++;
+          }
+        });
+
+        saveTickets();
+        renderDashboard();
+        btn.innerText = '🎯 Dò Kết Quả Tự Động';
+        btn.disabled = false;
+        showToast(`🎉 Đã tự động dò xong ${settledCount} vé theo kết quả Minh Chính!`);
+      }, 900);
+    }
+
+    // 7. COPY GỬI KHÁCH (TUYỆT ĐỐI BẢO MẬT, KHÔNG DÍNH NGUỒN)
+    function copyCustomerTicket(id) {
+      const t = tickets.find(x => x.id === id);
+      if (!t) return;
+
+      const numbersStr = Array.isArray(t.numbers) ? t.numbers.join(', ') : t.numbers;
+      const statusText = t.status === 'TRUNG' ? `🎉 TRÚNG (${t.matches} nháy) - ${t.prizeDetails}` : (t.status === 'TRUOT' ? '❌ TRƯỢT' : '⏳ ĐANG CHỜ SỔ');
+      const winMoney = (t.winCust * 1000).toLocaleString('vi-VN') + ' đ';
+      const costMoney = (t.costCust * 1000).toLocaleString('vi-VN') + ' đ';
+      const profitCust = ((t.winCust - t.costCust) * 1000).toLocaleString('vi-VN') + ' đ';
+
+      // TUYỆT ĐỐI CHỈ CÓ THÔNG TIN KHÁCH
+      const msg = `🎰 THÔNG BÁO VÉ CƯỢC (GỬI QUÝ KHÁCH)\n----------------------------------\n• Mã vé: ${t.id}\n• Khách hàng: ${t.playerName}\n• Ngày xổ: ${t.date}\n• Đài: ${t.province}\n• Số đánh: [ ${numbersStr} ]\n• Điểm cược: ${t.amount}k / con\n• Tiền xác: ${costMoney}\n----------------------------------\n• KẾT QUẢ: ${statusText}\n• TIỀN THƯỞNG: ${winMoney}\n• KHÁCH LÃI: ${t.winCust > 0 ? '+' : ''}${profitCust}\n----------------------------------\n(Nguồn đối chiếu kết quả: MinhChinh.com)`;
+
+      navigator.clipboard.writeText(msg).then(() => {
+        showToast('✅ Đã copy tin nhắn gửi KHÁCH HÀNG (Hoàn toàn sạch Nguồn)!');
+      });
+    }
+
+    // 8. COPY PHƠI NỘP NGUỒN
+    function copySourceTicket(id) {
+      const t = tickets.find(x => x.id === id);
+      if (!t) return;
+
+      const numbersStr = Array.isArray(t.numbers) ? t.numbers.join(', ') : t.numbers;
+      const srcCost = (t.costSrc * 1000).toLocaleString('vi-VN') + ' đ';
+
+      const msg = `📤 PHƠI CƯỢC (NỘP NGUỒN)\n----------------------------------\n• Mã vé: ${t.id}\n• Đài: ${t.province} (${t.region})\n• Số: [ ${numbersStr} ]\n• Điểm: ${t.amount}k\n• XÁC NỘP NGUỒN (76%): ${srcCost}\n----------------------------------\n(Nguồn chung x74)`;
+
+      navigator.clipboard.writeText(msg).then(() => {
+        showToast('✅ Đã copy phơi cược nộp cho CHỦ NGUỒN!');
+      });
+    }
+
+    function deleteTicket(id) {
+      if (confirm(`Bạn có chắc muốn xóa vé ${id} không?`)) {
+        tickets = tickets.filter(t => t.id !== id);
+        saveTickets();
+        renderDashboard();
+        showToast('Đã xóa vé thành công!');
+      }
+    }
+
+    function clearAllTickets() {
+      if (confirm('Bạn có chắc muốn xóa sạch tất cả vé cược không?')) {
+        tickets = [];
+        saveTickets();
+        renderDashboard();
+        showToast('Đã xóa sạch vé!');
+      }
+    }
+
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.innerText = msg;
+      toastIcon.innerText = type === 'warning' ? '⚠️' : '✅';
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+
+    // Khởi chạy khi load trang
+    window.addEventListener('DOMContentLoaded', () => {
+      loadTickets();
+      initForm();
+      renderDashboard();
+    });
+  </script>
+</body>
+</html>

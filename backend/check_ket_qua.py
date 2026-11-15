@@ -3,13 +3,14 @@
 """
 Công cụ kiểm tra kết quả xổ số từ Minh Chính (minhchinh.com)
 Hỗ trợ cả 3 miền: Miền Nam (MN), Miền Trung (MT), Miền Bắc (MB)
-Tự động dò vé cược theo đúng quy định từng miền và cập nhật lich_su_danh.csv
+Tự động dò vé cược theo đúng quy định 3 bên: Khách Hàng - Tôi - Chủ Nguồn
 """
 
 import sys
 import os
 import json
 import csv
+import math
 import argparse
 import urllib.request
 from datetime import datetime
@@ -145,9 +146,23 @@ def fetch_minhchinh(region="MN", date_str=None):
             "all_numbers": all_numbers
         }
 
+def get_data_path(filename):
+    """Tìm đường dẫn file dữ liệu trong thư mục data/ hoặc thư mục hiện tại"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(script_dir, "../data", filename),
+        os.path.join(script_dir, "data", filename),
+        os.path.join(os.getcwd(), "data", filename),
+        os.path.join(os.getcwd(), filename)
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return os.path.join(script_dir, "../data", filename)
+
 def save_lottery_cache(lottery_data):
-    """Lưu kết quả vào ket_qua_xo_so.json"""
-    cache_file = "ket_qua_xo_so.json"
+    """Lưu kết quả vào ket_qua_xo_so.json trong thư mục data/"""
+    cache_file = get_data_path("ket_qua_xo_so.json")
     cache = {}
     if os.path.exists(cache_file):
         try:
@@ -160,14 +175,21 @@ def save_lottery_cache(lottery_data):
     cache[key] = lottery_data
     with open(cache_file, "w", encoding="utf-8") as f:
         json.dump(cache, f, ensure_ascii=False, indent=2)
-    print(f"[+] Đã lưu kết quả [{lottery_data['region']}] ngày {lottery_data['date']} vào {cache_file}")
+
+def calculate_source_cost(loai, diem, reg, num_provinces=1, num_numbers=1):
+    """Tính tiền xác nộp nguồn theo công thức (Điểm * Số Lô * 76 * Đài * Con)/100 làm tròn"""
+    if loai == "bao_lo_2":
+        num_prizes = 27 if reg == "MB" else 18
+        raw_k = (diem * num_prizes * 76 * num_provinces * num_numbers) / 100.0
+        return int(math.floor(raw_k))
+    return 0
 
 def settle_csv(date_str=None):
-    """Dò toàn bộ vé cược trong lich_su_danh.csv theo quy chuẩn MN/MT hoặc MB"""
+    """Dò toàn bộ vé cược trong lich_su_danh.csv theo quy chuẩn 3 bên"""
     if not date_str:
         date_str = get_current_date()
     
-    csv_file = "lich_su_danh.csv"
+    csv_file = get_data_path("lich_su_danh.csv")
     if not os.path.exists(csv_file):
         print(f"[-] Không tìm thấy file {csv_file}")
         return
@@ -175,9 +197,15 @@ def settle_csv(date_str=None):
     rows = []
     with open(csv_file, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        fieldnames = reader.fieldnames
+        fieldnames = list(reader.fieldnames or [])
         for r in reader:
             rows.append(r)
+
+    # Đảm bảo có đủ các cột đối soát 3 bên
+    needed_fields = ["Xac_Nguon", "Trung_Nguon", "Loi_Cua_Toi"]
+    for nf in needed_fields:
+        if nf not in fieldnames:
+            fieldnames.append(nf)
 
     # Lấy danh sách kết quả xổ số cần thiết
     lottery_cache = {}
@@ -193,9 +221,9 @@ def settle_csv(date_str=None):
                 lottery_cache[key] = data
 
     updated_count = 0
-    print("\n" + "="*75)
-    print(f"🎯 KẾT QUẢ DÒ VÉ CƯỢC NGÀY {date_str}")
-    print("="*75)
+    print("\n" + "="*85)
+    print(f"🎯 KẾT QUẢ ĐỐI SOÁT 3 BÊN (KHÁCH - TÔI - NGUỒN) NGÀY {date_str}")
+    print("="*85)
 
     for r in rows:
         reg = r.get("Mien", "MN").upper()
@@ -221,78 +249,84 @@ def settle_csv(date_str=None):
         hit_notes = []
 
         if reg == "MB":
-            # ----------------- LUẬT MIỀN BẮC (MB) -----------------
+            # ----------------- MIỀN BẮC (MB) -----------------
             if loai == "bao_lo_2":
-                # Dò 2 số cuối của 27 giải
                 for prize, nums in prov_results.items():
                     for num in nums:
                         if len(num) >= 2 and num[-2:] == so:
                             matches += 1
                             hit_notes.append(f"{prize}:{num}")
-                payout = matches * diem * 72
+                payout_cust = matches * diem * 72
+                payout_src = matches * diem * 74  # Nguồn trả x74
+                xac_nguon = calculate_source_cost(loai, diem, "MB", 1, 1)
             elif loai == "bao_lo_3":
-                # Dò 3 số cuối
                 for prize, nums in prov_results.items():
                     for num in nums:
                         if len(num) >= 3 and num[-3:] == so:
                             matches += 1
                             hit_notes.append(f"{prize}:{num}")
-                payout = matches * diem * 620
+                payout_cust = matches * diem * 620
+                payout_src = payout_cust
+                xac_nguon = int(float(r.get("Tien_Xac", 0)) * 0.95)
             elif loai == "dau_duoi":
-                # MB Đầu Đuôi: Dò 4 số Giải 7 (Đầu) và 2 số cuối Giải Đặc Biệt (Đuôi)
-                # Giải 7
                 for num in prov_results.get("G7", []):
                     if len(num) >= 2 and num[-2:] == so:
                         matches += 1
                         hit_notes.append(f"G7:{num}")
-                # Giải Đặc Biệt
                 for num in prov_results.get("DB", []):
                     if len(num) >= 2 and num[-2:] == so:
                         matches += 1
                         hit_notes.append(f"ĐB:{num}")
-                # Ăn x72 cho mỗi nháy
-                payout = matches * diem * 72
+                payout_cust = matches * diem * 72
+                payout_src = payout_cust
+                xac_nguon = int(float(r.get("Tien_Xac", 0)) * 0.95)
             elif loai == "xiu_chu":
-                # MB Xỉu Chủ: Dò 3 số Giải 6 (Đầu) và 3 số cuối Giải Đặc Biệt (Đuôi)
-                # Giải 6
                 for num in prov_results.get("G6", []):
                     if len(num) >= 3 and num[-3:] == so:
                         matches += 1
                         hit_notes.append(f"G6:{num}")
-                # Giải Đặc Biệt
                 for num in prov_results.get("DB", []):
                     if len(num) >= 3 and num[-3:] == so:
                         matches += 1
                         hit_notes.append(f"ĐB:{num}")
-                payout = matches * diem * 620
+                payout_cust = matches * diem * 620
+                payout_src = payout_cust
+                xac_nguon = int(float(r.get("Tien_Xac", 0)) * 0.95)
             else:
-                payout = 0
+                payout_cust = 0
+                payout_src = 0
+                xac_nguon = 0
 
         else:
-            # ----------------- LUẬT MIỀN NAM & MIỀN TRUNG (MN & MT) -----------------
+            # ----------------- MIỀN NAM & TRUNG (MN & MT) -----------------
             if loai == "bao_lo_2":
                 for prize, nums in prov_results.items():
                     for num in nums:
                         if len(num) >= 2 and num[-2:] == so:
                             matches += 1
                             hit_notes.append(f"{prize}:{num}")
-                payout = matches * diem * 72
+                payout_cust = matches * diem * 72
+                payout_src = matches * diem * 74  # Nguồn trả x74
+                xac_nguon = calculate_source_cost(loai, diem, "MN", 1, 1)
             elif loai == "bao_lo_3":
                 for prize, nums in prov_results.items():
                     for num in nums:
                         if len(num) >= 3 and num[-3:] == so:
                             matches += 1
                             hit_notes.append(f"{prize}:{num}")
-                payout = matches * diem * 620
+                payout_cust = matches * diem * 620
+                payout_src = payout_cust
+                xac_nguon = int(float(r.get("Tien_Xac", 0)) * 0.95)
             elif loai == "bao_lo_4":
                 for prize, nums in prov_results.items():
                     for num in nums:
                         if len(num) >= 4 and num[-4:] == so:
                             matches += 1
                             hit_notes.append(f"{prize}:{num}")
-                payout = matches * diem * 5200
+                payout_cust = matches * diem * 5200
+                payout_src = payout_cust
+                xac_nguon = int(float(r.get("Tien_Xac", 0)) * 0.95)
             elif loai == "dau_duoi":
-                # G8 (Đầu) & ĐB (Đuôi)
                 for num in prov_results.get("G8", []):
                     if num[-2:] == so:
                         matches += 1
@@ -301,9 +335,10 @@ def settle_csv(date_str=None):
                     if num[-2:] == so:
                         matches += 1
                         hit_notes.append(f"DB:{num}")
-                payout = matches * (diem / 10.0) * 720
+                payout_cust = matches * (diem / 10.0) * 720
+                payout_src = payout_cust
+                xac_nguon = int(float(r.get("Tien_Xac", 0)) * 0.95)
             elif loai == "xiu_chu":
-                # G7 (Đầu) & ĐB (Đuôi)
                 for num in prov_results.get("G7", []):
                     if len(num) >= 3 and num[-3:] == so:
                         matches += 1
@@ -312,15 +347,26 @@ def settle_csv(date_str=None):
                     if len(num) >= 3 and num[-3:] == so:
                         matches += 1
                         hit_notes.append(f"DB:{num}")
-                payout = matches * diem * 620
+                payout_cust = matches * diem * 620
+                payout_src = payout_cust
+                xac_nguon = int(float(r.get("Tien_Xac", 0)) * 0.95)
             else:
-                payout = 0
+                payout_cust = 0
+                payout_src = 0
+                xac_nguon = 0
 
-        cost = float(r.get("Tien_Xac", 0))
+        cost_cust = float(r.get("Tien_Xac", 0))
         r["Ket_Qua"] = "TRUNG" if matches > 0 else "TRUOT"
         r["So_Nhay"] = str(matches)
-        r["Tien_Trung"] = f"{int(payout)}"
-        r["Loi_Nhuan"] = f"{int(payout - cost)}"
+        r["Tien_Trung"] = f"{int(payout_cust)}"
+        r["Loi_Nhuan"] = f"{int(payout_cust - cost_cust)}" # Khách lời/lỗ
+        
+        # Cột cho Tôi & Nguồn
+        r["Xac_Nguon"] = f"{xac_nguon}"
+        r["Trung_Nguon"] = f"{int(payout_src)}"
+        profit_my = (cost_cust - xac_nguon) + (payout_src - payout_cust)
+        r["Loi_Cua_Toi"] = f"{int(profit_my)}"
+
         if hit_notes:
             r["Ghi_Chu"] = f"Trúng: {', '.join(hit_notes)}"
         elif matches == 0:
@@ -328,7 +374,10 @@ def settle_csv(date_str=None):
         updated_count += 1
 
         status_text = "🎉 TRÚNG" if matches > 0 else "❌ TRƯỢT"
-        print(f"Vé {r['Ma_Ve']} | [{reg}] {r['Nguoi_Choi']} | {dai} | {loai} '{so}' | {status_text} ({matches} nháy) -> Thưởng: {int(payout):,}k")
+        print(f"Vé {r['Ma_Ve']} | [{reg}] {r['Nguoi_Choi']} | {dai} | {loai} '{so}' | {status_text} ({matches} nháy)")
+        print(f"   ├─ Khách: Thu xác {int(cost_cust)}k ➔ Trả thưởng: {int(payout_cust)}k (Khách lời: {int(payout_cust - cost_cust)}k)")
+        print(f"   ├─ Nguồn: Nộp xác {xac_nguon}k ➔ Nguồn trả: {int(payout_src)}k")
+        print(f"   └─ 🏆 LỢI NHUẬN CỦA BẠN (TÔI): +{int(profit_my):,}k (Xác lời {int(cost_cust - xac_nguon)}k + Thưởng chênh lệch {int(payout_src - payout_cust)}k)\n")
 
     # Ghi lại vào file CSV
     with open(csv_file, "w", encoding="utf-8", newline="") as f:
@@ -336,7 +385,7 @@ def settle_csv(date_str=None):
         writer.writeheader()
         writer.writerows(rows)
 
-    print(f"\n[+] Đã cập nhật thành công {updated_count} vé vào {csv_file}")
+    print(f"[+] Đã cập nhật thành công {updated_count} vé vào {csv_file}")
 
 def main():
     parser = argparse.ArgumentParser(description="Kiểm tra kết quả xổ số Minh Chính")

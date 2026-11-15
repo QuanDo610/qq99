@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><title>LUCKY QQ99 - Tests</title>
+<style>body{font-family:system-ui;margin:20px}td,th{border:1px solid #ccc;padding:3px 8px;font-size:13px}.ok{color:#047857}.bad{color:#b91c1c;font-weight:bold}</style></head>
+<body>
+<h2>LUCKY QQ99 - Kiểm thử (chạy qua <code>python3 backend/dev_server.py</code>, mở /tests/test.html)</h2>
+<div id="summary">Đang chạy...</div><pre id="log"></pre><table id="t"></table>
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/stations.js"></script>
+<script src="../assets/js/calculator.js"></script>
+<script src="../assets/js/results.js"></script>
+<script src="../assets/js/googleSheet.js"></script>
+<script src="../assets/js/autoCheck.js"></script>
+<script>
+let pass = 0, fail = 0;
+const log = (m) => { document.getElementById('log').textContent += m + '\n'; };
+function eq(name, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  log((ok ? 'PASS ' : 'FAIL ') + name + (ok ? '' : `  got=${JSON.stringify(got)} want=${JSON.stringify(want)}`));
+}
+(async () => {
+  try {
+    // --- Stations ---
+    eq('forDay Nam T7', Stations.forDay('Nam', '14/11/2026'), ['TPHCM', 'Long An', 'Bình Phước', 'Hậu Giang']);
+    eq('forDay Trung T2', Stations.forDay('Trung', '09/11/2026'), ['Phú Yên', 'Huế']);
+    eq('parseDai alias', Stations.parseDai('HCM, LA, hg', 'Nam', '14/11/2026'), ['TPHCM', 'Long An', 'Hậu Giang']);
+    eq('parseDai count legacy', Stations.parseDai('3', 'Nam', '14/11/2026'), ['TPHCM', 'Long An', 'Bình Phước']);
+    eq('parseDai Bắc', Stations.parseDai('1', 'Bắc', '14/11/2026'), ['Miền Bắc']);
+
+    // --- Công thức tiền (khớp ví dụ trong luật) ---
+    const e1 = Calculator.enrichTicket({ date: '14/11/2026', player: 'A', mien: 'Nam', dai: 'TPHCM, Long An, Bình Phước', so: '08 80 09 90', tien: 5000, trung: '' });
+    eq('MN 5k 3đài 4con thuKhach', e1.thuKhach, 840000);
+    eq('MN 5k 3đài 4con nguonThu', e1.nguonThu, 820000);
+    const e2 = Calculator.enrichTicket({ date: '14/11/2026', player: 'A', mien: 'Bắc', dai: 'Miền Bắc', so: '03 30 11 66', tien: 5000, trung: '03 66x2' });
+    eq('MB 5k 4con thuKhach', e2.thuKhach, 420000);
+    eq('MB 5k 4con nguonThu (làm tròn tổng 410.400)', e2.nguonThu, 410000);
+    eq('MB nháy từ Trúng', e2.trungNLo, 3);
+    eq('MB qLoi', e2.qLoi, (420000 - 410000) + 3 * 5000 * 2);
+
+    // --- Parser trên kết quả thật 14/11/2026 ---
+    const kq = {};
+    for (const m of ['Nam', 'Trung', 'Bắc']) {
+      kq[m] = await Results.get(m, '14/11/2026', { force: true });
+      log(`${m}: ` + kq[m].stations.map(s => `${s.name}[${s.tails.length}]`).join(', '));
+      eq(`${m} tất cả đài đủ giải`, kq[m].stations.every(s => s.complete), true);
+    }
+    eq('MN T7 có 4 đài', kq.Nam.stations.map(s => s.name), ['TPHCM', 'Long An', 'Bình Phước', 'Hậu Giang']);
+    eq('MB 1 đài 27 lô', kq['Bắc'].stations[0].tails.length, 27);
+    eq('MN TPHCM G8 = 96 (đã thấy trên trang)', kq.Nam.stations[0].tails[0], '96');
+    eq('MN Long An G8 = 55', kq.Nam.stations[1].tails[0], '55');
+
+    // --- Đối chiếu dữ liệu thật: dò lại các dòng cũ và so với cột "Trúng N Lô" cũ ---
+    const recs = await GoogleSheet.fetchSheetData();
+    log(`Sheet mode=${GoogleSheet.mode}, ${recs.length} dòng`);
+    const rows = [];
+    for (const r of recs) {
+      const t = Calculator.enrichTicket(r);
+      let res = { ready: false, reason: '?' };
+      try { res = Results.settle(t, await Results.get(t.mien, t.date)); } catch (e) { res = { ready: false, reason: e.message }; }
+      const trung = res.ready ? Results.hitsToTrung(res.hits) : '(' + res.reason + ')';
+      const hits = res.ready ? Calculator.hitsFromTrung(trung, Calculator.parseNumbers(t.so)) : null;
+      rows.push({ date: t.date, player: t.player, mien: t.mien, dai: t.dai, so: t.so, tien: t.tien, trung, hits, legacy: t.legacyHits });
+    }
+    document.getElementById('t').innerHTML = '<tr><th>Ngày</th><th>Khách</th><th>Miền</th><th>Đài</th><th>Số</th><th>Tiền</th><th>Trúng (dò mới)</th><th>Nháy mới</th><th>Nháy cũ (Sheet)</th><th></th></tr>' +
+      rows.map(r => `<tr><td>${r.date}</td><td>${r.player}</td><td>${r.mien}</td><td>${r.dai}</td><td>${r.so}</td><td>${r.tien}</td><td>${r.trung}</td><td>${r.hits}</td><td>${r.legacy}</td><td class="${r.hits === r.legacy ? 'ok' : 'bad'}">${r.hits === r.legacy ? 'KHỚP' : 'LỆCH'}</td></tr>`).join('');
+  } catch (e) {
+    fail++; log('LỖI: ' + e.message + '\n' + e.stack);
+  }
+  document.getElementById('summary').innerHTML = `<b class="${fail ? 'bad' : 'ok'}">PASS ${pass} / FAIL ${fail}</b>`;
+  document.title = `DONE pass=${pass} fail=${fail}`;
+})();
+</script></body></html>
