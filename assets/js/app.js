@@ -90,7 +90,17 @@ window.updateStatusBanner = updateStatusBanner;
 
 /** Chỉ lưu dữ liệu nguyên tử vào localStorage (số tiền luôn tính lại) */
 function rawOf(t) {
-  return { rowId: t.rowId, date: t.date, player: t.player, mien: t.mien, dai: t.dai, so: t.so, tien: t.tien, trung: t.trung };
+  return {
+    rowId: t.rowId,
+    date: t.date,
+    player: t.player,
+    mien: t.mien,
+    dai: t.dai,
+    loaiCuoc: t.loaiCuoc || 'Bao Lô 2 số',
+    so: t.so,
+    tien: t.tien,
+    trung: t.trung
+  };
 }
 
 function loadFromLocalStorage() {
@@ -271,15 +281,16 @@ function renderDashboard() {
 
   document.getElementById('recordCountBadge').innerText = filteredTickets.length + ' dòng cược';
 
-  let colSpan = 11;
+  let colSpan = 12;
   if (AppState.viewMode === 'full') {
-    colSpan = 14;
+    colSpan = 15;
     thead.innerHTML = `
       <tr class="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
         <th class="py-3 px-3">Ngày</th>
         <th class="py-3 px-3">Khách Hàng</th>
         <th class="py-3 px-2 text-center">Miền</th>
         <th class="py-3 px-2 text-center">Đài</th>
+        <th class="py-3 px-2 text-center bg-slate-700 text-amber-200">Loại Cược</th>
         <th class="py-3 px-3">Số Đánh</th>
         <th class="py-3 px-3 text-right">Điểm Cược</th>
         <th class="py-3 px-3 text-right bg-emerald-900/60 text-emerald-200">Tiền Xác Khách</th>
@@ -293,29 +304,31 @@ function renderDashboard() {
       </tr>
     `;
   } else if (AppState.viewMode === 'privacy') {
-    colSpan = 10;
-    thead.innerHTML = `
-      <tr class="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
-        <th class="py-3 px-3">Ngày</th>
-        <th class="py-3 px-3">Khách Hàng</th>
-        <th class="py-3 px-2 text-center">Miền / Đài</th>
-        <th class="py-3 px-3">Số Đánh</th>
-        <th class="py-3 px-3 text-right">Điểm Cược</th>
-        <th class="py-3 px-3 text-right bg-emerald-900/60 text-emerald-200">Tiền Xác</th>
-        <th class="py-3 px-2 text-center">Nháy Trúng</th>
-        <th class="py-3 px-3 text-right text-orange-200">Tiền Trúng (x72)</th>
-        <th class="py-3 px-3 text-right">Khách Lời / Lỗ</th>
-        <th class="py-3 px-3 text-center">Gửi Khách</th>
-      </tr>
-    `;
-  } else {
-    // Mode 'standard' (Mặc định: Tập trung Khách & Lợi Nhuận của Tôi)
     colSpan = 11;
     thead.innerHTML = `
       <tr class="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
         <th class="py-3 px-3">Ngày</th>
         <th class="py-3 px-3">Khách Hàng</th>
         <th class="py-3 px-2 text-center">Miền / Đài</th>
+        <th class="py-3 px-2 text-center bg-slate-700 text-amber-200">Loại Cược</th>
+        <th class="py-3 px-3">Số Đánh</th>
+        <th class="py-3 px-3 text-right">Điểm Cược</th>
+        <th class="py-3 px-3 text-right bg-emerald-900/60 text-emerald-200">Tiền Xác</th>
+        <th class="py-3 px-2 text-center">Nháy Trúng</th>
+        <th class="py-3 px-3 text-right text-orange-200">Tiền Trúng</th>
+        <th class="py-3 px-3 text-right">Khách Lời / Lỗ</th>
+        <th class="py-3 px-3 text-center">Gửi Khách</th>
+      </tr>
+    `;
+  } else {
+    // Mode 'standard' (Mặc định: Tập trung Khách & Lợi Nhuận của Tôi)
+    colSpan = 12;
+    thead.innerHTML = `
+      <tr class="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
+        <th class="py-3 px-3">Ngày</th>
+        <th class="py-3 px-3">Khách Hàng</th>
+        <th class="py-3 px-2 text-center">Miền / Đài</th>
+        <th class="py-3 px-2 text-center bg-slate-700 text-amber-200">Loại Cược</th>
         <th class="py-3 px-3">Số Đánh</th>
         <th class="py-3 px-3 text-right">Điểm Cược</th>
         <th class="py-3 px-3 text-right bg-emerald-900/60 text-emerald-200">Tiền Xác Khách</th>
@@ -349,7 +362,8 @@ function renderDashboard() {
     };
 
     const numbersStr = t.so || '';
-    const numNumbers = Calculator.parseNumbers(numbersStr).length || 1;
+    const digitLen = Calculator.getDigitLength(t.loaiCuoc);
+    const numNumbers = Calculator.parseNumbers(numbersStr, digitLen).length || 1;
     const matches = Number(t.trungNLo) || 0;
     const pend = t.trungState === 'pending';
 
@@ -358,6 +372,8 @@ function renderDashboard() {
 
     const ticketLaiXac = Number(t.thuKhach || 0) - Number(t.nguonThu || 0);
     const ticketLaiThuong = Number(t.qTrung || 0) - Number(t.khachTrung || 0);
+
+    const loaiBadge = `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 whitespace-nowrap">${t.loaiCuoc || 'Bao Lô 2 số'}</span>`;
 
     // Xây dựng các cột theo từng chế độ xem
     if (AppState.viewMode === 'full') {
@@ -371,6 +387,7 @@ function renderDashboard() {
           <span class="px-2 py-0.5 rounded ${t.mien === 'Bắc' ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'}">${t.mien}</span>
         </td>
         <td class="py-3 px-2 text-center text-xs font-bold text-slate-700 whitespace-nowrap" title="${t.dai}">${t.soDai} đài</td>
+        <td class="py-3 px-2 text-center whitespace-nowrap">${loaiBadge}</td>
         <td class="py-3 px-3 font-mono font-bold text-slate-900 bg-slate-50 rounded">
           <span class="text-emerald-950 font-black">${numbersStr}</span>
         </td>
@@ -403,6 +420,7 @@ function renderDashboard() {
         <td class="py-3 px-2 text-center text-xs font-semibold whitespace-nowrap">
           <span class="px-2 py-0.5 rounded ${t.mien === 'Bắc' ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'}">${t.mien} (${t.soDai} đài)</span>
         </td>
+        <td class="py-3 px-2 text-center whitespace-nowrap">${loaiBadge}</td>
         <td class="py-3 px-3 font-mono font-bold text-slate-900 bg-slate-50 rounded">
           <span class="text-emerald-950 font-black">${numbersStr}</span>
         </td>
@@ -428,6 +446,7 @@ function renderDashboard() {
         <td class="py-3 px-2 text-center text-xs font-semibold whitespace-nowrap">
           <span class="px-2 py-0.5 rounded ${t.mien === 'Bắc' ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'}">${t.mien} (${t.soDai} đài)</span>
         </td>
+        <td class="py-3 px-2 text-center whitespace-nowrap">${loaiBadge}</td>
         <td class="py-3 px-3 font-mono font-bold text-slate-900 bg-slate-50/80 rounded">
           <span class="text-emerald-950 font-black">${numbersStr}</span>
         </td>
@@ -476,6 +495,10 @@ function renderDashboard() {
               </div>
               <div class="space-y-1.5 text-slate-600">
                 <div class="flex justify-between">
+                  <span>Loại cược:</span>
+                  <span class="font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${t.loaiCuoc || 'Bao Lô 2 số'}</span>
+                </div>
+                <div class="flex justify-between">
                   <span>Đài (${t.soDai}):</span>
                   <span class="font-semibold text-slate-800 text-right">${t.dai}</span>
                 </div>
@@ -521,6 +544,10 @@ function renderDashboard() {
                 <span class="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded text-[11px]">Nội Bộ</span>
               </div>
               <div class="space-y-1.5 text-slate-600">
+                <div class="flex justify-between">
+                  <span>Loại cược:</span>
+                  <span class="font-bold text-indigo-900 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">${t.loaiCuoc || 'Bao Lô 2 số'}</span>
+                </div>
                 <div class="flex justify-between">
                   <span>Quy tắc xác nộp:</span>
                   <span class="text-[11px] text-indigo-700 font-bold">76% (làm tròn bỏ lẻ nghìn)</span>
@@ -808,27 +835,49 @@ async function editTrung(realIndex) {
 }
 window.editTrung = editTrung;
 
-/** DÒ TỰ ĐỘNG: lấy kết quả xổ số theo ngày/miền/đài của từng vé chưa dò */
+/** DÒ TỰ ĐỘNG: lấy kết quả xổ số theo ngày đã chọn trên bộ lọc (tránh dò lại ngày cũ) */
 async function runAutoCheck() {
   const btn = document.getElementById('btnAutoCheck');
   const report = document.getElementById('checkReport');
-  const visible = new Set(getFilteredTickets());
-  const pendingCount = AppState.tickets.filter(t => t.trungState === 'pending' && visible.has(t)).length;
-  if (!pendingCount) { showToast('Không có vé nào đang chờ dò trong danh sách hiện tại'); return; }
+  const filterInput = document.getElementById('filterDate');
 
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="inline-block animate-spin">⏳</span> Đang dò...'; }
+  let targetDate = '';
+  if (filterInput && filterInput.value) {
+    const [y, m, d] = filterInput.value.split('-');
+    targetDate = `${d}/${m}/${y}`;
+  }
+
+  // Nếu người dùng đang tick "Xem tất cả", tự động bỏ tick để hiển thị đúng ngày dò
+  const chkViewAll = document.getElementById('chkViewAll');
+  if (chkViewAll && chkViewAll.checked && targetDate) {
+    chkViewAll.checked = false;
+    renderDashboard();
+  }
+
+  if (!targetDate) {
+    showToast('⚠️ Vui lòng chọn một ngày cụ thể trên thanh lọc để dò kết quả!', 'warning');
+    return;
+  }
+
+  const targetPending = AppState.tickets.filter(t => t.trungState === 'pending' && t.date === targetDate);
+  if (!targetPending.length) {
+    showToast(`Không có vé nào đang chờ dò cho ngày ${targetDate}`, 'warning');
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="inline-block animate-spin">⏳</span> Đang dò ngày ${targetDate}...`; }
   try {
-    const { settled, waiting, errors } = await AutoChecker.autoCheck(AppState.tickets, t => visible.has(t));
+    const { settled, waiting, errors } = await AutoChecker.autoCheck(AppState.tickets, t => t.date === targetDate);
     const r = await commitTrung(settled);
 
     const lines = [];
-    lines.push(`<b>Đã dò ${settled.length}/${pendingCount} vé.</b>`);
+    lines.push(`<b>Ngày ${targetDate}: Đã dò xong ${settled.length}/${targetPending.length} vé.</b>`);
     if (r.sheetError) lines.push(`⚠️ Chưa ghi được vào Sheet: ${r.sheetError}`);
     else if (settled.length && !GoogleSheet.canWrite()) lines.push('🔒 Chưa kết nối Apps Script nên kết quả dò chỉ lưu tạm trên web.');
     waiting.forEach(w => lines.push(`⏳ ${w.group}: ${w.reason}${w.count > 1 ? ` (${w.count} vé)` : ''}`));
     errors.forEach(e => lines.push(`❌ ${e}`));
     if (report) { report.innerHTML = lines.map(l => `<div>${l}</div>`).join(''); report.classList.remove('hidden'); }
-    showToast(`🔎 Đã dò ${settled.length}/${pendingCount} vé` + (waiting.length || errors.length ? ' (xem chi tiết bên dưới)' : ''), settled.length ? 'success' : 'warning');
+    showToast(`🔎 Đã dò ngày ${targetDate}: ${settled.length}/${targetPending.length} vé` + (waiting.length || errors.length ? ' (xem chi tiết)' : ''), settled.length ? 'success' : 'warning');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '<span>🔎</span> Dò Tự Động'; }
   }
@@ -851,6 +900,7 @@ function openAddModal() {
       document.getElementById('inputDate').value = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
     }
     refreshDaiChips();
+    onInputLoaiCuocChange();
     document.getElementById('inputPlayer').focus();
   }
 }
@@ -861,6 +911,23 @@ function closeAddModal() {
   if (modal) modal.classList.add('hidden');
 }
 window.closeAddModal = closeAddModal;
+
+function onInputLoaiCuocChange() {
+  const loai = document.getElementById('inputLoaiCuoc')?.value || 'Bao Lô 2 số';
+  const digitLen = Calculator.getDigitLength(loai);
+  const inputSo = document.getElementById('inputSo');
+  if (inputSo) {
+    if (digitLen === 4) {
+      inputSo.placeholder = 'Ví dụ: 1234 5678 (mỗi số 4 chữ số, cách nhau khoảng trắng)';
+    } else if (digitLen === 3) {
+      inputSo.placeholder = 'Ví dụ: 123 456 789 (mỗi số 3 chữ số, cách nhau khoảng trắng)';
+    } else {
+      inputSo.placeholder = 'Ví dụ: 08 80 09 90 hoặc 15-51 (2 chữ số, cách nhau khoảng trắng)';
+    }
+  }
+  updateModalPreview();
+}
+window.onInputLoaiCuocChange = onInputLoaiCuocChange;
 
 /** Ngày đang chọn trong form dạng dd/mm/yyyy */
 function formDateStr() {
@@ -922,8 +989,10 @@ function selectedDai() {
 function updateModalPreview() {
   const mien = document.getElementById('inputMien').value;
   const dai = selectedDai().length || 0;
+  const loaiCuoc = document.getElementById('inputLoaiCuoc')?.value || 'Bao Lô 2 số';
+  const digitLen = Calculator.getDigitLength(loaiCuoc);
   const rawSo = document.getElementById('inputSo').value;
-  const numbers = Calculator.parseNumbers(rawSo);
+  const numbers = Calculator.parseNumbers(rawSo, digitLen);
   const tien = Number(document.getElementById('inputTien').value) || 1000;
 
   const tagsContainer = document.getElementById('inputSoTags');
@@ -936,7 +1005,7 @@ function updateModalPreview() {
   });
   document.getElementById('inputSoCount').innerText = numbers.length + ' con';
 
-  const { thuKhach, nguonThu, laiXac } = Calculator.calculateCosts(mien, Math.max(dai, 1), numbers.length, tien);
+  const { thuKhach, nguonThu, laiXac } = Calculator.calculateCosts(mien, Math.max(dai, 1), numbers.length, tien, loaiCuoc);
   const empty = dai === 0 || numbers.length === 0;
   document.getElementById('previewThuKhach').innerText = Calculator.formatMoney(empty ? 0 : thuKhach);
   document.getElementById('previewNguonThu').innerText = Calculator.formatMoney(empty ? 0 : nguonThu);
@@ -954,13 +1023,15 @@ function onInputMienChange() { refreshDaiChips(); }
 window.onInputMienChange = onInputMienChange;
 
 /**
- * 7. Lưu vé mới (7 cột nguyên tử) vào Google Sheet
+ * 7. Lưu vé mới (8 cột nguyên tử) vào Google Sheet
  */
 async function saveNewTicket() {
   const player = document.getElementById('inputPlayer').value.trim();
   if (!player) { showToast('⚠️ Vui lòng nhập tên khách hàng!', 'warning'); return; }
 
-  const numbers = Calculator.parseNumbers(document.getElementById('inputSo').value);
+  const loaiCuoc = document.getElementById('inputLoaiCuoc')?.value || 'Bao Lô 2 số';
+  const digitLen = Calculator.getDigitLength(loaiCuoc);
+  const numbers = Calculator.parseNumbers(document.getElementById('inputSo').value, digitLen);
   if (numbers.length === 0) { showToast('⚠️ Vui lòng nhập ít nhất 1 con số đánh!', 'warning'); return; }
 
   const dai = selectedDai();
@@ -972,6 +1043,7 @@ async function saveNewTicket() {
     player,
     mien,
     dai: Stations.joinDai(dai),
+    loaiCuoc,
     so: numbers.join(' '),
     tien: Number(document.getElementById('inputTien').value) || 1000,
     trung: ''
@@ -1092,7 +1164,7 @@ function copyCustomerMessage(idx) {
   const statusStr = pend ? '⏳ CHƯA CÓ KẾT QUẢ' : (matches > 0 ? `🎉 TRÚNG ${matches} NHÁY` : '❌ CHƯA TRÚNG');
   const khachLoiNumber = Number(t.khachLoi) || 0;
 
-  const msg = `🎰 LUCKY QQ99 - THÔNG BÁO VÉ CƯỢC\n----------------------------------\n• Ngày: ${t.date || 'Hôm nay'}\n• Khách hàng: ${t.player}\n• Miền: ${t.mien} - Đài: ${t.dai}\n• Số đánh: [ ${t.so} ]\n• Điểm cược: ${Calculator.formatMoney(t.tien)} / con\n• TIỀN XÁC: ${Calculator.formatMoney(t.thuKhach)}\n----------------------------------\n• KẾT QUẢ: ${statusStr}\n• TIỀN THƯỞNG: ${Calculator.formatMoney(t.khachTrung)}\n• QUÝ KHÁCH: ${pend ? 'chờ kết quả' : (khachLoiNumber >= 0 ? '+' : '') + Calculator.formatMoney(t.khachLoi)}\n----------------------------------\n(Nguồn tra cứu kết quả: xosodaiphat.com)`;
+  const msg = `🎰 LUCKY QQ99 - THÔNG BÁO VÉ CƯỢC\n----------------------------------\n• Ngày: ${t.date || 'Hôm nay'}\n• Khách hàng: ${t.player}\n• Miền: ${t.mien} - Đài: ${t.dai}\n• Loại cược: ${t.loaiCuoc || 'Bao Lô 2 số'}\n• Số đánh: [ ${t.so} ]\n• Điểm cược: ${Calculator.formatMoney(t.tien)} / con\n• TIỀN XÁC: ${Calculator.formatMoney(t.thuKhach)}\n----------------------------------\n• KẾT QUẢ: ${statusStr}\n• TIỀN THƯỞNG: ${Calculator.formatMoney(t.khachTrung)}\n• QUÝ KHÁCH: ${pend ? 'chờ kết quả' : (khachLoiNumber >= 0 ? '+' : '') + Calculator.formatMoney(t.khachLoi)}\n----------------------------------\n(Nguồn tra cứu kết quả: xosodaiphat.com)`;
 
   navigator.clipboard.writeText(msg).then(() => {
     showToast('✅ Đã copy tin nhắn gửi KHÁCH HÀNG (Tuyệt đối an toàn)!');
@@ -1107,7 +1179,7 @@ function copySourceMessage(idx) {
   const t = AppState.tickets[idx];
   if (!t) return;
 
-  const msg = `📤 LUCKY QQ99 - PHƠI CƯỢC (NỘP NGUỒN)\n----------------------------------\n• Ngày: ${t.date}\n• Miền: ${t.mien} - Đài: ${t.dai}\n• Số đánh: [ ${t.so} ] - ${Calculator.formatMoney(t.tien)}\n• XÁC NỘP NGUỒN (76%): ${Calculator.formatMoney(t.nguonThu)}\n• NGUỒN TRẢ (x74): ${Calculator.formatMoney(t.qTrung)}\n----------------------------------`;
+  const msg = `📤 LUCKY QQ99 - PHƠI CƯỢC (NỘP NGUỒN)\n----------------------------------\n• Ngày: ${t.date}\n• Miền: ${t.mien} - Đài: ${t.dai}\n• Loại cược: ${t.loaiCuoc || 'Bao Lô 2 số'}\n• Số đánh: [ ${t.so} ] - ${Calculator.formatMoney(t.tien)}\n• XÁC NỘP NGUỒN (76%): ${Calculator.formatMoney(t.nguonThu)}\n• NGUỒN TRẢ: ${Calculator.formatMoney(t.qTrung)}\n----------------------------------`;
 
   navigator.clipboard.writeText(msg).then(() => {
     showToast('✅ Đã copy phơi nộp CHỦ NGUỒN!');

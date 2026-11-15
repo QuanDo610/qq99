@@ -2,8 +2,8 @@
  * =========================================================
  * RESULTS.JS - LẤY & PHÂN TÍCH KẾT QUẢ XỔ SỐ (xosodaiphat.com)
  * - Lấy HTML qua proxy (dev_server.py khi chạy local, hoặc Apps Script)
- * - Bóc 2 số đuôi của TẤT CẢ giải (18 lô MN/MT, 27 lô MB) theo từng đài
- * - Đếm số nháy của từng con số theo đài mà khách đã chọn
+ * - Bóc kết quả đầy đủ (lô 2 số, lô 3 số, lô 4 số, đầu đuôi, xỉu chủ) theo từng đài
+ * - Đếm số nháy của từng con số theo đài & loại cược mà khách đã chọn
  * =========================================================
  */
 const Results = {
@@ -46,38 +46,119 @@ const Results = {
   },
 
   /**
-   * Bóc kết quả từ HTML.
-   * @returns {{mien:string, stations:Array<{name:string,key:string,tails:string[],complete:boolean}>}}
+   * Bóc kết quả từ HTML theo từng đài và theo từng loại cược.
+   * @returns {{mien:string, stations:Array<{name:string,key:string,tails2:string[],tails3:string[],tails4:string[],dauDuoi:string[],xiuChuDau:string[],xiuChuDuoi:string[],xiuChuDauDuoi:string[],tails:string[],complete:boolean}>}}
    */
   parseHtml(html, mien) {
     const m = Stations.normMien(mien);
     const expected = this.EXPECTED[m];
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    const tailsOf = (el) => [...el.querySelectorAll('span')]
+    const numbersOf = (el) => [...el.querySelectorAll('span')]
       .map(s => s.textContent.trim())
-      .filter(t => /^\d{2,6}$/.test(t))
-      .map(t => t.slice(-2));
-    const isPrizeRow = (tr) => /^(G\.)?(ĐB|\d)/.test((tr.querySelector('td')?.textContent || '').trim());
+      .filter(t => /^\d{2,6}$/.test(t));
+    const isPrizeRow = (tr) => /^(G\.)?(ĐB|\d)/i.test((tr.querySelector('td')?.textContent || '').trim());
 
     let stations = [];
     if (m === 'Bắc') {
       const table = doc.querySelector('table.table-xsmb');
-      const tails = [];
+      const allNumbers = [];
+      const prizes = {};
       if (table) table.querySelectorAll('tr').forEach(tr => {
+        const rowText = (tr.querySelector('td')?.textContent || '').trim();
+        if (/mã đb/i.test(rowText)) return;
         if (!isPrizeRow(tr)) return;
         const tds = tr.querySelectorAll('td');
-        for (let i = 1; i < tds.length; i++) tails.push(...tailsOf(tds[i]));
+        const rowNums = [];
+        for (let i = 1; i < tds.length; i++) rowNums.push(...numbersOf(tds[i]));
+
+        let pKey = 'OTHER';
+        if (/đb/i.test(rowText)) pKey = 'DB';
+        else {
+          const match = rowText.match(/(\d+)/);
+          if (match) pKey = 'G' + match[1];
+        }
+        prizes[pKey] = (prizes[pKey] || []).concat(rowNums);
+        allNumbers.push(...rowNums);
       });
-      stations = [{ name: 'Miền Bắc', tails }];
+
+      const tails2 = allNumbers.map(t => t.slice(-2));
+      const tails3 = allNumbers.filter(t => t.length >= 3).map(t => t.slice(-3));
+      const tails4 = allNumbers.filter(t => t.length >= 4).map(t => t.slice(-4));
+      const dauDuoi = [
+        ...(prizes['G7'] || []).map(t => t.slice(-2)),
+        ...(prizes['DB'] || []).map(t => t.slice(-2))
+      ];
+      const xiuChuDau = (prizes['G6'] || []).slice(0, 1).map(t => t.slice(-3));
+      const xiuChuDuoi = (prizes['DB'] || []).map(t => t.slice(-3));
+      const xiuChuDauDuoi = (prizes['DB'] || []).map(t => t.slice(-3));
+
+      stations = [{
+        name: 'Miền Bắc',
+        allNumbers,
+        prizes,
+        tails2,
+        tails3,
+        tails4,
+        dauDuoi,
+        xiuChuDau,
+        xiuChuDuoi,
+        xiuChuDauDuoi,
+        tails: tails2
+      }];
     } else {
       const table = doc.querySelector('table.table-xsmn, table.table-xsmt');
       if (table) {
         const names = [...table.querySelectorAll('thead th a')].map(a => a.textContent.trim());
-        stations = names.map(name => ({ name, tails: [] }));
+        stations = names.map(name => ({
+          name,
+          allNumbers: [],
+          prizes: {},
+          tails2: [],
+          tails3: [],
+          tails4: [],
+          dauDuoi: [],
+          xiuChuDau: [],
+          xiuChuDuoi: [],
+          xiuChuDauDuoi: [],
+          tails: []
+        }));
+
         table.querySelectorAll('tbody tr').forEach(tr => {
+          const rowText = (tr.querySelector('td')?.textContent || '').trim();
           if (!isPrizeRow(tr)) return;
+
+          let pKey = 'OTHER';
+          if (/đb/i.test(rowText)) pKey = 'DB';
+          else {
+            const match = rowText.match(/(\d+)/);
+            if (match) pKey = 'G' + match[1];
+          }
+
           const cells = tr.querySelectorAll('td.tn_prize');
-          cells.forEach((td, i) => { if (stations[i]) stations[i].tails.push(...tailsOf(td)); });
+          cells.forEach((td, i) => {
+            if (stations[i]) {
+              const nums = numbersOf(td);
+              stations[i].allNumbers.push(...nums);
+              stations[i].prizes[pKey] = (stations[i].prizes[pKey] || []).concat(nums);
+            }
+          });
+        });
+
+        stations.forEach(s => {
+          s.tails2 = s.allNumbers.map(t => t.slice(-2));
+          s.tails3 = s.allNumbers.filter(t => t.length >= 3).map(t => t.slice(-3));
+          s.tails4 = s.allNumbers.filter(t => t.length >= 4).map(t => t.slice(-4));
+          s.dauDuoi = [
+            ...(s.prizes['G8'] || []).map(t => t.slice(-2)),
+            ...(s.prizes['DB'] || []).map(t => t.slice(-2))
+          ];
+          s.xiuChuDau = (s.prizes['G7'] || []).map(t => t.slice(-3));
+          s.xiuChuDuoi = (s.prizes['DB'] || []).map(t => t.slice(-3));
+          s.xiuChuDauDuoi = [
+            ...(s.prizes['G7'] || []).map(t => t.slice(-3)),
+            ...(s.prizes['DB'] || []).map(t => t.slice(-3))
+          ];
+          s.tails = s.tails2;
         });
       }
     }
@@ -85,7 +166,7 @@ const Results = {
     stations.forEach(s => {
       s.name = Stations.canonical(s.name) || s.name;
       s.key = Stations.key(s.name);
-      s.complete = s.tails.length === expected;
+      s.complete = (s.tails2 || []).length === expected;
     });
     return { mien: m, stations };
   },
@@ -113,22 +194,44 @@ const Results = {
   },
 
   /**
-   * Dò 1 vé với kết quả.
+   * Dò 1 vé với kết quả dựa trên đài và loại cược.
    * @returns {{ready:boolean, reason?:string, hits:Object<string,number>}}
    */
   settle(ticket, kq) {
     const need = ticket.daiList && ticket.daiList.length ? ticket.daiList : [];
     if (!need.length) return { ready: false, reason: 'Vé chưa chọn đài', hits: {} };
 
+    const loaiCuoc = ticket.loaiCuoc || 'Bao Lô 2 số';
+    const digitLen = Calculator.getDigitLength(loaiCuoc);
+    const numbers = [...new Set(Calculator.parseNumbers(ticket.so, digitLen))];
     const hits = {};
-    const numbers = [...new Set(Calculator.parseNumbers(ticket.so))];
 
     for (const name of need) {
       const st = kq.stations.find(s => s.key === Stations.key(name));
       if (!st) return { ready: false, reason: `Ngày này không có đài ${name}`, hits: {} };
-      if (!st.complete) return { ready: false, reason: `${name} chưa xổ xong (${st.tails.length}/${this.EXPECTED[kq.mien]} giải)`, hits: {} };
+      if (!st.complete) return { ready: false, reason: `${name} chưa xổ xong (${(st.tails2 || st.tails || []).length}/${this.EXPECTED[kq.mien]} giải)`, hits: {} };
+
+      let pool = [];
+      if (loaiCuoc === 'Bao Lô 2 số') {
+        pool = st.tails2 || st.tails || [];
+      } else if (loaiCuoc === 'Bao Lô 3 số') {
+        pool = st.tails3 || [];
+      } else if (loaiCuoc === 'Bao Lô 4 số') {
+        pool = st.tails4 || [];
+      } else if (loaiCuoc === 'Đầu Đuôi') {
+        pool = st.dauDuoi || [];
+      } else if (loaiCuoc === 'Xỉu Chủ Đầu') {
+        pool = st.xiuChuDau || [];
+      } else if (loaiCuoc === 'Xỉu Chủ Đuôi') {
+        pool = st.xiuChuDuoi || [];
+      } else if (loaiCuoc === 'Xỉu Chủ Đầu Đuôi') {
+        pool = st.xiuChuDauDuoi || [];
+      } else {
+        pool = st.tails2 || st.tails || [];
+      }
+
       numbers.forEach(n => {
-        const c = st.tails.filter(t => t === n).length;
+        const c = pool.filter(t => t === n).length;
         if (c) hits[n] = (hits[n] || 0) + c;
       });
     }

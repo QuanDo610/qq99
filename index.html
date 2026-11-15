@@ -16,6 +16,21 @@
   <!-- KaTeX CSS & JS for LaTeX Math Rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script>
+    function renderKatexMath(element = document.body) {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(element, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true }
+          ],
+          throwOnError: false
+        });
+      }
+    }
+  </script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous" onload="renderKatexMath()"></script>
   
   <!-- Custom Stylesheet -->
@@ -320,14 +335,28 @@
           </div>
         </div>
 
-        <!-- Hàng 2: Miền & Đài (đài tự theo thứ trong tuần, bấm để bỏ bớt) -->
-        <div>
-          <label class="block font-bold text-slate-600 uppercase tracking-wider mb-1">Miền Xổ Số</label>
-          <select id="inputMien" onchange="onInputMienChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-            <option value="Nam">🌴 Miền Nam (18 lô)</option>
-            <option value="Bắc">🏮 Miền Bắc (27 lô - 1 đài)</option>
-            <option value="Trung">🏖️ Miền Trung (18 lô)</option>
-          </select>
+        <!-- Hàng 2: Loại Cược & Miền Xổ Số -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase tracking-wider mb-1">Loại Cược</label>
+            <select id="inputLoaiCuoc" onchange="onInputLoaiCuocChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="Bao Lô 2 số">🎯 Bao Lô 2 số</option>
+              <option value="Bao Lô 3 số">🎲 Bao Lô 3 số (3 Càng Lô)</option>
+              <option value="Bao Lô 4 số">💎 Bao Lô 4 số (4 Càng Lô)</option>
+              <option value="Đầu Đuôi">⚡ Đầu Đuôi (2 số)</option>
+              <option value="Xỉu Chủ Đầu">🔺 Xỉu Chủ Đầu (3 số)</option>
+              <option value="Xỉu Chủ Đuôi">🔻 Xỉu Chủ Đuôi (3 số)</option>
+              <option value="Xỉu Chủ Đầu Đuôi">🔄 Xỉu Chủ Đầu Đuôi (3 số)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase tracking-wider mb-1">Miền Xổ Số</label>
+            <select id="inputMien" onchange="onInputMienChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="Nam">🌴 Miền Nam (18 lô)</option>
+              <option value="Bắc">🏮 Miền Bắc (27 lô - 1 đài)</option>
+              <option value="Trung">🏖️ Miền Trung (18 lô)</option>
+            </select>
+          </div>
         </div>
         <div>
           <div class="flex justify-between items-center mb-1">
@@ -495,62 +524,115 @@
       <!-- Modal Body -->
       <div class="p-6 space-y-6 text-xs text-slate-700">
         
-        <!-- Bảng tỷ lệ -->
+        <!-- Bảng tỷ lệ tổng hợp các loại cược -->
         <div class="overflow-x-auto rounded-xl border border-slate-200">
-          <table class="w-full text-left text-xs border-collapse min-w-[550px]">
+          <table class="w-full text-left text-xs border-collapse min-w-[650px]">
             <thead>
               <tr class="bg-slate-100 text-slate-700 font-bold uppercase text-[11px]">
-                <th class="py-2.5 px-3">Hạng mục</th>
-                <th class="py-2.5 px-3">Khách Hàng (Thu/Trả)</th>
-                <th class="py-2.5 px-3">Chủ Nguồn (Nộp/Nhận)</th>
-                <th class="py-2.5 px-3 text-emerald-700">Lợi Nhuận của Bạn (Q)</th>
+                <th class="py-2.5 px-3">Loại Cược</th>
+                <th class="py-2.5 px-3 text-center">Số Chữ Số</th>
+                <th class="py-2.5 px-3">Số Lô / Đài</th>
+                <th class="py-2.5 px-3">Xác Khách (1k)</th>
+                <th class="py-2.5 px-3">Thưởng Khách</th>
+                <th class="py-2.5 px-3">Thưởng Nguồn</th>
+                <th class="py-2.5 px-3 text-emerald-700 font-bold">Lợi Nhuận Q</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr>
-                <td class="py-2.5 px-3 font-bold">Bao Lô MN (1k / 1 đài)</td>
-                <td class="py-2.5 px-3 font-mono">14.000 đ</td>
-                <td class="py-2.5 px-3 font-mono text-indigo-700">13.000 đ</td>
-                <td class="py-2.5 px-3 font-bold text-emerald-600">+1.000 đ / con</td>
-              </tr>
-              <tr class="bg-emerald-50/20">
-                <td class="py-2.5 px-3 font-bold">Bao Lô MN (1k / 3 đài)</td>
-                <td class="py-2.5 px-3 font-mono">42.000 đ</td>
-                <td class="py-2.5 px-3 font-mono text-indigo-700">41.000 đ</td>
-                <td class="py-2.5 px-3 font-bold text-emerald-600">+1.000 đ</td>
-              </tr>
-              <tr class="bg-emerald-50/40">
-                <td class="py-2.5 px-3 font-bold">Bao Lô MN (5k / 3 đài - 4 con)</td>
-                <td class="py-2.5 px-3 font-mono">840.000 đ</td>
-                <td class="py-2.5 px-3 font-mono text-indigo-700">820.000 đ</td>
-                <td class="py-2.5 px-3 font-bold text-emerald-600">+20.000 đ xác</td>
+              <!-- 1. Bao Lô 2 số -->
+              <tr class="bg-slate-50/50">
+                <td class="py-2.5 px-3 font-bold text-slate-900">🎯 Bao Lô 2 số (MN/MT)</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold">2 con</td>
+                <td class="py-2.5 px-3">18 lô</td>
+                <td class="py-2.5 px-3 font-mono">14.000 đ / đài</td>
+                <td class="py-2.5 px-3 text-orange-700 font-mono font-bold">$\times 72$ (72k)</td>
+                <td class="py-2.5 px-3 text-amber-700 font-mono font-bold">$\times 74$ (74k)</td>
+                <td class="py-2.5 px-3 font-bold text-emerald-600">+1k xác + 2k thưởng</td>
               </tr>
               <tr>
-                <td class="py-2.5 px-3 font-bold">Bao Lô MB (1k / 1 đài)</td>
+                <td class="py-2.5 px-3 font-bold text-slate-900">🎯 Bao Lô 2 số (MB)</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold">2 con</td>
+                <td class="py-2.5 px-3">27 lô</td>
                 <td class="py-2.5 px-3 font-mono">21.000 đ</td>
-                <td class="py-2.5 px-3 font-mono text-indigo-700">20.000 đ</td>
-                <td class="py-2.5 px-3 font-bold text-emerald-600">+1.000 đ</td>
+                <td class="py-2.5 px-3 text-orange-700 font-mono font-bold">$\times 72$ (72k)</td>
+                <td class="py-2.5 px-3 text-amber-700 font-mono font-bold">$\times 74$ (74k)</td>
+                <td class="py-2.5 px-3 font-bold text-emerald-600">+1k xác + 2k thưởng</td>
               </tr>
-              <tr class="bg-orange-50/30 font-bold">
-                <td class="py-2.5 px-3 text-orange-900">🎯 Trúng Bao Lô 2 số</td>
-                <td class="py-2.5 px-3 text-orange-700 font-mono">$\times 72$ (72k)</td>
-                <td class="py-2.5 px-3 text-orange-700 font-mono">$\times 74$ (74k)</td>
-                <td class="py-2.5 px-3 text-emerald-700 font-mono">+2k hoa hồng / nháy</td>
+              <!-- 2. Bao Lô 3 số -->
+              <tr class="bg-indigo-50/20">
+                <td class="py-2.5 px-3 font-bold text-indigo-950">🎲 Bao Lô 3 số (3 Càng Lô)</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold">3 con</td>
+                <td class="py-2.5 px-3">17 lô (MN) / 23 lô (MB)</td>
+                <td class="py-2.5 px-3 font-mono">17.000 đ / 23.000 đ</td>
+                <td class="py-2.5 px-3 text-orange-700 font-mono font-bold">$\times 600$ (600k)</td>
+                <td class="py-2.5 px-3 text-amber-700 font-mono font-bold">$\times 650$ (650k)</td>
+                <td class="py-2.5 px-3 font-bold text-emerald-600">Lãi xác + 50k thưởng</td>
+              </tr>
+              <!-- 3. Bao Lô 4 số -->
+              <tr class="bg-emerald-50/20">
+                <td class="py-2.5 px-3 font-bold text-emerald-950">💎 Bao Lô 4 số (4 Càng Lô)</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold">4 con</td>
+                <td class="py-2.5 px-3">16 lô (MN) / 20 lô (MB)</td>
+                <td class="py-2.5 px-3 font-mono">16.000 đ / 20.000 đ</td>
+                <td class="py-2.5 px-3 text-orange-700 font-mono font-bold">$\times 5.000$ (5.000k)</td>
+                <td class="py-2.5 px-3 text-amber-700 font-mono font-bold">$\times 5.500$ (5.500k)</td>
+                <td class="py-2.5 px-3 font-bold text-emerald-600">Lãi xác + 500k thưởng</td>
+              </tr>
+              <!-- 4. Đầu Đuôi -->
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-slate-900">⚡ Đầu Đuôi</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold">2 con</td>
+                <td class="py-2.5 px-3">2 lô (MN) / 5 lô (MB)</td>
+                <td class="py-2.5 px-3 font-mono">2.000 đ / 5.000 đ</td>
+                <td class="py-2.5 px-3 text-orange-700 font-mono font-bold">$\times 72$ (72k)</td>
+                <td class="py-2.5 px-3 text-amber-700 font-mono font-bold">$\times 74$ (74k)</td>
+                <td class="py-2.5 px-3 font-bold text-emerald-600">Lãi xác + 2k thưởng</td>
+              </tr>
+              <!-- 5. Xỉu Chủ -->
+              <tr class="bg-amber-50/30">
+                <td class="py-2.5 px-3 font-bold text-amber-950">🔺 Xỉu Chủ Đầu</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold">3 con</td>
+                <td class="py-2.5 px-3">1 lô (G7 MN/MT)</td>
+                <td class="py-2.5 px-3 font-mono">1.000 đ / đài</td>
+                <td class="py-2.5 px-3 text-orange-700 font-mono font-bold">$\times 620$ (620k)</td>
+                <td class="py-2.5 px-3 text-amber-700 font-mono font-bold">$\times 650$ (650k)</td>
+                <td class="py-2.5 px-3 font-bold text-emerald-600">Lãi xác + 30k thưởng</td>
+              </tr>
+              <tr class="bg-amber-50/30">
+                <td class="py-2.5 px-3 font-bold text-amber-950">🔻 Xỉu Chủ Đuôi (3 Càng ĐB)</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold">3 con</td>
+                <td class="py-2.5 px-3">1 lô (3 đuôi ĐB)</td>
+                <td class="py-2.5 px-3 font-mono">1.000 đ / đài</td>
+                <td class="py-2.5 px-3 text-orange-700 font-mono font-bold">$\times 620$ (620k)</td>
+                <td class="py-2.5 px-3 text-amber-700 font-mono font-bold">$\times 650$ (650k)</td>
+                <td class="py-2.5 px-3 font-bold text-emerald-600">Lãi xác + 30k thưởng</td>
+              </tr>
+              <tr class="bg-amber-50/50">
+                <td class="py-2.5 px-3 font-bold text-amber-950">🔄 Xỉu Chủ Đầu Đuôi</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold">3 con</td>
+                <td class="py-2.5 px-3">2 lô (G7 + 3 đuôi ĐB)</td>
+                <td class="py-2.5 px-3 font-mono">2.000 đ / đài</td>
+                <td class="py-2.5 px-3 text-orange-700 font-mono font-bold">$\times 620$ (620k)</td>
+                <td class="py-2.5 px-3 text-amber-700 font-mono font-bold">$\times 650$ (650k)</td>
+                <td class="py-2.5 px-3 font-bold text-emerald-600">Lãi xác + 30k thưởng</td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <!-- KaTeX display -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-          <div class="font-bold text-slate-900 text-sm">Công thức tính Tiền Xác Nguồn chuẩn hóa:</div>
-          <div class="text-center">
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+          <div class="font-bold text-slate-900 text-sm">Công thức tính Tiền Xác & Lợi Nhuận Chuẩn Hóa:</div>
+          <div class="text-center overflow-x-auto">
             $$\text{Tiền Xác Nguồn} = \left\lfloor \frac{\text{Điểm (VNĐ)} \times \text{Số Lô} \times 76 \times \text{Số Đài} \times \text{Số Con}}{100 \times 1000} \right\rfloor \times 1000$$
           </div>
+          <div class="text-center overflow-x-auto">
+            $$\text{Lợi Nhuận của Tôi (Q)} = (\text{Tiền Thu Khách} - \text{Tiền Nộp Nguồn}) + (\text{Thưởng Nguồn Trả} - \text{Thưởng Trả Khách})$$
+          </div>
           <p class="text-slate-600 leading-relaxed text-[11px]">
-            • <strong>Miền Nam & Miền Trung</strong>: 18 giải (lô) / đài.<br>
-            • <strong>Miền Bắc</strong>: 27 giải (lô) / đài.<br>
-            • <strong>Làm tròn</strong>: Lấy phần nghìn nguyên, bỏ phần số lẻ nghìn.
+            • <strong>Quy tắc làm tròn Nguồn</strong>: Nhân tỷ lệ $76\%$, sau đó lấy phần nghìn nguyên và bỏ số lẻ nghìn.<br>
+            • <strong>Bảo mật 100%</strong>: Giao diện và tin nhắn gửi Khách tuyệt đối không tiết lộ giá vốn Nguồn hoặc Lợi nhuận Q.<br>
+            • <strong>Cược Đá / Xiên</strong>: Hệ thống đã sẵn sàng cấu trúc mở rộng, sẽ kích hoạt khi hoàn tất đối soát tỷ lệ với Chủ Nguồn.
           </p>
         </div>
 

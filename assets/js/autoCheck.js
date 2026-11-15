@@ -4,6 +4,7 @@
  * 1. Tự động: lấy kết quả từ xosodaiphat -> điền cột "Trúng"
  * 2. Thủ công: dán/nhập số trúng (19.3, 19x3, 19 19 19...)
  * Cột "Trúng": rỗng = chưa dò | "-" = đã dò, trượt | "08x2 80" = các số trúng
+ * Hỗ trợ các loại cược: Bao Lô 2, 3, 4 số; Đầu Đuôi; Xỉu Chủ
  * =========================================================
  */
 const AutoChecker = {
@@ -61,8 +62,11 @@ const AutoChecker = {
     const out = [];
     tickets.forEach(t => {
       if (!filter(t)) return;
+      const digitLen = Calculator.getDigitLength(t.loaiCuoc);
       const hits = {};
-      [...new Set(Calculator.parseNumbers(t.so))].forEach(n => { if (winningMap[n]) hits[n] = winningMap[n]; });
+      [...new Set(Calculator.parseNumbers(t.so, digitLen))].forEach(n => {
+        if (winningMap[n]) hits[n] = winningMap[n];
+      });
       out.push({ ticket: t, trung: Results.hitsToTrung(hits) });
     });
     return out;

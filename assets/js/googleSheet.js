@@ -62,9 +62,10 @@ const GoogleSheet = {
     const iPlayer = isLegacy ? idx(['player', 'khachhang'], 1) : idx(['khach', 'khachhang', 'player'], 1);
     const iMien = idx(['mien'], 2);
     const iDai = idx(['dai', 'sodai'], 3);
-    const iSo = idx(['so', 'sodanh'], 4);
-    const iTien = idx(['diemcuoc', 'tien'], 5);
-    const iTrung = isLegacy ? idx(['trungnlo', 'nhaytrung'], 8) : idx(['trung'], 6);
+    const iLoai = idx(['loai', 'loạicược', 'loaicược', 'type', 'loai_cuoc'], -1);
+    const iSo = idx(['so', 'sodanh'], iLoai >= 0 ? 5 : 4);
+    const iTien = idx(['diemcuoc', 'tien'], iLoai >= 0 ? 6 : 5);
+    const iTrung = isLegacy ? idx(['trungnlo', 'nhaytrung'], 8) : idx(['trung'], iLoai >= 0 ? 7 : 6);
 
     const records = [];
     let lastDate = '';
@@ -80,12 +81,15 @@ const GoogleSheet = {
         if (date) lastDate = date; else date = lastDate;
       }
 
+      const loaiCuoc = iLoai >= 0 ? (this._cellStr(c[iLoai]) || 'Bao Lô 2 số') : 'Bao Lô 2 số';
+
       const rec = {
         rowId: i + 2,
         date,
         player,
         mien: this._cellStr(c[iMien]) || 'Nam',
         dai: this._cellStr(c[iDai]),
+        loaiCuoc,
         so,
         tien: Number(c[iTien] && c[iTien].v) || 1000,
         trung: ''
@@ -116,11 +120,20 @@ const GoogleSheet = {
     return json;
   },
 
-  /** Thêm cược mới (7 cột nguyên tử, Trúng để trống = chưa dò) */
+  /** Thêm cược mới (8 cột nguyên tử, Trúng để trống = chưa dò) */
   addRow(t) {
     return this._post({
       action: 'add',
-      rows: [{ date: t.date, player: t.player, mien: t.mien, dai: t.dai, so: t.so, tien: t.tien, trung: t.trung || '' }]
+      rows: [{
+        date: t.date,
+        player: t.player,
+        mien: t.mien,
+        dai: t.dai,
+        loaiCuoc: t.loaiCuoc || 'Bao Lô 2 số',
+        so: t.so,
+        tien: t.tien,
+        trung: t.trung || ''
+      }]
     });
   },
 
