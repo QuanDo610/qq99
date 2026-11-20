@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * RESULTS.JS - LẤY & PHÂN TÍCH KẾT QUẢ XỔ SỐ (xosodaiphat.com)
- * - Lấy HTML qua proxy (dev_server.py khi chạy local, hoặc Apps Script)
+ * - Lấy HTML qua Google Apps Script Web App (proxy trực tiếp, không cần backend server)
  * - Bóc kết quả đầy đủ (lô 2 số, lô 3 số, lô 4 số, đầu đuôi, xỉu chủ) theo từng đài
  * - Đếm số nháy của từng con số theo đài & loại cược mà khách đã chọn
  * =========================================================
@@ -20,28 +20,22 @@ const Results = {
     return `KQ_${Stations.normMien(mien)}_${dateStr.replace(/\//g, '')}`;
   },
 
-  /** Lấy HTML thô qua proxy. Trả về chuỗi HTML. */
+  /** Lấy HTML thô qua Google Apps Script proxy. Trả về chuỗi HTML. */
   async fetchHtml(mien, dateStr) {
     const m = Stations.normMien(mien);
     const code = { Nam: 'MN', Trung: 'MT', 'Bắc': 'MB' }[m];
     const q = `mien=${code}&date=${encodeURIComponent(dateStr)}`;
-    const host = location.hostname;
-    const isLocal = (host === 'localhost' || host === '127.0.0.1') && location.protocol.startsWith('http');
     const cfg = window.LUCKY_CONFIG || {};
 
-    let url;
-    if (isLocal) {
-      url = `/api/kq?${q}`;
-    } else if (cfg.webAppUrl) {
-      url = `${cfg.webAppUrl}?action=kq&${q}`;
-    } else {
-      throw new Error('Chưa có proxy lấy kết quả: hãy chạy `python3 backend/dev_server.py` hoặc điền webAppUrl trong assets/js/config.js');
+    if (!cfg.webAppUrl) {
+      throw new Error('Chưa điền webAppUrl trong assets/js/config.js');
     }
 
+    const url = `${cfg.webAppUrl}?action=kq&${q}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Proxy lỗi HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`Google Apps Script trả HTTP ${res.status}`);
     const json = await res.json();
-    if (json.status !== 'success' || !json.html) throw new Error(json.message || 'Proxy không trả HTML');
+    if (json.status !== 'success' || !json.html) throw new Error(json.message || 'Không lấy được HTML kết quả');
     return json.html;
   },
 

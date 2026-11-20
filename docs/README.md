@@ -22,12 +22,10 @@ LuckyQQ/
 │   │   └── app.js              # Điều khiển Dashboard, View Mode, Accordion 3 bên, Form modal
 │   └── img/
 │       └── banking/            # Các hình ảnh mã QR chuyển khoản Vietcombank
-├── backend/                    # Toàn bộ xử lý backend & công cụ hỗ trợ
-│   ├── dev_server.py           # Server chạy local (python3 backend/dev_server.py -> localhost:8089)
-│   ├── google_apps_script.js   # Duy nhất 1 file Google Apps Script v3.0 đưa lên Google Sheets
-│   └── check_ket_qua.py        # Script Python cào trực tiếp MinhChinh.com
+├── backend/                    # Mã nguồn triển khai Google Apps Script
+│   └── google_apps_script.js   # Duy nhất 1 file Google Apps Script đưa lên Google Sheets
 ├── tests/                      # Bộ kiểm thử tự động
-│   └── test.html               # 18 bài test tự động trên dữ liệu thật (mở /tests/test.html)
+│   └── test.html               # Kiểm thử tự động trên dữ liệu thật (mở trực tiếp trên trình duyệt)
 ├── data/                       # Dữ liệu cục bộ và bộ nhớ đệm
 │   ├── ket_qua_xo_so.json      # Bộ nhớ đệm kết quả xổ số
 │   ├── lich_su_danh.csv        # File lịch sử đánh

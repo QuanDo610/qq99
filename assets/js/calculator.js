@@ -85,6 +85,23 @@ const Calculator = {
   },
 
   /**
+   * Tự động nhận diện loại cược dựa vào độ dài các số đánh
+   * Khi Google Sheet chưa có cột Loại cược hoặc giá trị bị rỗng/sai lệch
+   */
+  inferLoaiCuoc(soStr, fallback = 'Bao Lô 2 số') {
+    if (!soStr) return fallback;
+    const tokens = String(soStr).trim().split(/[\s,;.\-_/]+/).filter(s => /^\d+$/.test(s));
+    if (!tokens.length) return fallback;
+    // Kiểm tra độ dài chữ số
+    if (tokens.every(t => t.length === 3)) return 'Bao Lô 3 số';
+    if (tokens.every(t => t.length === 4)) return 'Bao Lô 4 số';
+    if (tokens.every(t => t.length === 2)) return 'Bao Lô 2 số';
+    if (tokens.some(t => t.length === 3)) return 'Bao Lô 3 số';
+    if (tokens.some(t => t.length === 4)) return 'Bao Lô 4 số';
+    return fallback;
+  },
+
+  /**
    * Tách danh sách số đánh từ chuỗi bất kỳ (khoảng trắng, dấu '-', phẩy, chấm...)
    * Chuẩn hóa về độ dài chữ số tương ứng (2 chữ số: '5' -> '05'; 3 chữ số: '7' -> '007')
    * @param {string} raw - Chuỗi nhập vào ví dụ "08 80" hoặc "123-456"
@@ -259,7 +276,14 @@ const Calculator = {
   enrichTicket(rawTicket) {
     const mien = typeof Stations !== 'undefined' ? Stations.normMien(rawTicket.mien) : (rawTicket.mien || 'Nam');
     const date = rawTicket.date || '';
-    const loaiCuoc = rawTicket.loaiCuoc || 'Bao Lô 2 số';
+
+    // Tự động nhận diện loại cược nếu chưa có hoặc nếu bị gán nhầm 'Bao Lô 2 số' trong khi số đánh có 3 hoặc 4 chữ số
+    let loaiCuoc = rawTicket.loaiCuoc;
+    const inferred = this.inferLoaiCuoc(rawTicket.so);
+    if (!loaiCuoc || (loaiCuoc === 'Bao Lô 2 số' && (inferred === 'Bao Lô 3 số' || inferred === 'Bao Lô 4 số'))) {
+      loaiCuoc = inferred;
+    }
+
     const digitLen = this.getDigitLength(loaiCuoc);
     const numbersList = this.parseNumbers(rawTicket.so, digitLen);
     const daiList = typeof Stations !== 'undefined' ? Stations.parseDai(rawTicket.dai, mien, date) : [rawTicket.dai || '1'];

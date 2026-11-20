@@ -56,8 +56,32 @@ td .katex, span .katex {
   transition: opacity 0.2s ease-in-out;
 }
 
+.modal-backdrop:not(.hidden) {
+  animation: fadeIn 0.18s ease-out;
+}
+
 .modal-content {
   transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+.modal-backdrop:not(.hidden) .modal-content {
+  animation: popUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popUp {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* Toast animation */

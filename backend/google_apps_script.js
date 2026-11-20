@@ -36,10 +36,65 @@ function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-/** Tạo tab CUOC với 8 cột chuẩn, định dạng văn bản cho Đài/Loại cược/Số/Trúng */
+/** Nâng cấp tab CUOC từ 7 cột lên 8 cột chuẩn (Chèn cột 'Loại cược' vào vị trí Cột E) */
+function upgradeCuocTo8Cols() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(TAB);
+  if (!sh) {
+    setupCuoc();
+    return;
+  }
+
+  var header5 = (sh.getRange(1, 5).getValue() || '').toString().trim().toLowerCase();
+  if (header5.indexOf('loại') >= 0 || header5.indexOf('loai') >= 0) {
+    if (SpreadsheetApp.getUi()) SpreadsheetApp.getUi().alert('Tab CUOC đã có cột "Loại cược" rồi (đang ở chuẩn 8 cột).');
+    return;
+  }
+
+  // Chèn cột mới vào vị trí cột 5 (Cột E)
+  sh.insertColumnBefore(5);
+  sh.getRange(1, 5).setValue('Loại cược')
+    .setFontWeight('bold').setFontColor('#ffffff').setBackground('#1e293b').setHorizontalAlignment('center');
+  sh.setColumnWidth(5, 140);
+
+  var lastRow = sh.getLastRow();
+  if (lastRow >= 2) {
+    var rangeSo = sh.getRange(2, 6, lastRow - 1, 1).getValues(); // Cột F bây giờ là Số
+    var loaiVals = [];
+    for (var i = 0; i < rangeSo.length; i++) {
+      var rawSo = String(rangeSo[i][0] || '').trim();
+      var tokens = rawSo.split(/[\s,;.\-_/]+/).filter(function(s) { return /^\d+$/.test(s); });
+      var len = tokens.length ? tokens[0].length : 2;
+      var loai = 'Bao Lô 2 số';
+      if (len === 3 || tokens.some(function(t) { return t.length === 3; })) loai = 'Bao Lô 3 số';
+      else if (len === 4 || tokens.some(function(t) { return t.length === 4; })) loai = 'Bao Lô 4 số';
+      loaiVals.push([loai]);
+    }
+    sh.getRange(2, 5, loaiVals.length, 1).setNumberFormat('@').setValues(loaiVals);
+  }
+
+  // Validation dropdown cho Loại cược
+  var rule = SpreadsheetApp.newDataValidation().requireValueInList(LOAI_CUOC_LIST, true).setAllowInvalid(true).build();
+  sh.getRange(2, 5, Math.max(lastRow, 2000), 1).setDataValidation(rule);
+
+  if (SpreadsheetApp.getUi()) {
+    SpreadsheetApp.getUi().alert('🎉 Đã nâng cấp tab CUOC lên 8 cột chuẩn thành công! Cột E ("Loại cược") đã được tạo và tự động phân loại.');
+  }
+}
+
+/** Tạo mới hoặc định dạng tab CUOC với 8 cột chuẩn */
 function setupCuoc() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(TAB) || ss.insertSheet(TAB);
+  var sh = ss.getSheetByName(TAB);
+  if (sh) {
+    var header5 = (sh.getRange(1, 5).getValue() || '').toString().trim().toLowerCase();
+    if (header5.indexOf('loại') < 0 && header5.indexOf('loai') < 0 && sh.getLastRow() >= 2) {
+      upgradeCuocTo8Cols();
+      return;
+    }
+  } else {
+    sh = ss.insertSheet(TAB);
+  }
   sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
     .setFontWeight('bold').setFontColor('#ffffff').setBackground('#1e293b').setHorizontalAlignment('center');
   sh.setFrozenRows(1);
@@ -65,7 +120,9 @@ function setupCuoc() {
   sh.setColumnWidth(7, 95);  // Điểm cược
   sh.setColumnWidth(8, 150); // Trúng
 
-  SpreadsheetApp.getUi().alert('Đã thiết lập tab CUOC (8 cột: Ngày, Khách, Miền, Đài, Loại cược, Số, Điểm cược, Trúng).');
+  if (SpreadsheetApp.getUi()) {
+    SpreadsheetApp.getUi().alert('Đã thiết lập tab CUOC (8 cột: Ngày, Khách, Miền, Đài, Loại cược, Số, Điểm cược, Trúng).');
+  }
 }
 
 /** Chép dữ liệu từ tab KHÁCH cũ sang CUOC (mặc định loại cược là Bao Lô 2 số) */
@@ -129,6 +186,7 @@ function doGet(e) {
  *   {action:'add', rows:[{date,player,mien,dai,loaiCuoc,so,tien,trung}]}
  *   {action:'setTrung', items:[{rowId, trung}]}
  *   {action:'delete', rowId}
+ *   {action:'upgrade8Cols'}
  */
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -136,30 +194,53 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
     var sh = getSheet_();
+    var header5 = (sh.getRange(1, 5).getValue() || '').toString().trim().toLowerCase();
+    var hasLoai = header5.indexOf('loại') >= 0 || header5.indexOf('loai') >= 0 || (sh.getLastColumn() >= 8);
+
+    if (body.action === 'upgrade8Cols') {
+      if (!hasLoai) {
+        upgradeCuocTo8Cols();
+        return json_({ status: 'success', message: 'Đã nâng cấp tab CUOC lên 8 cột chuẩn' });
+      }
+      return json_({ status: 'success', message: 'Tab CUOC đã có cột Loại cược rồi' });
+    }
 
     if (body.action === 'add') {
       var start = Math.max(sh.getLastRow(), 1) + 1;
       var rows = body.rows.map(function (r) {
-        return [
-          toDate_(r.date),
-          r.player,
-          r.mien,
-          String(r.dai),
-          String(r.loaiCuoc || 'Bao Lô 2 số'),
-          String(r.so),
-          Number(r.tien) || 0,
-          String(r.trung || '')
-        ];
+        if (hasLoai) {
+          return [
+            toDate_(r.date),
+            r.player,
+            r.mien,
+            String(r.dai),
+            String(r.loaiCuoc || 'Bao Lô 2 số'),
+            String(r.so),
+            Number(r.tien) || 0,
+            String(r.trung || '')
+          ];
+        } else {
+          return [
+            toDate_(r.date),
+            r.player,
+            r.mien,
+            String(r.dai),
+            String(r.so),
+            Number(r.tien) || 0,
+            String(r.trung || '')
+          ];
+        }
       });
-      sh.getRange(start, 1, rows.length, 8).setValues(rows);
+      sh.getRange(start, 1, rows.length, hasLoai ? 8 : 7).setValues(rows);
       return json_({ status: 'success', added: rows.length, firstRow: start });
     }
 
     if (body.action === 'setTrung') {
+      var colTrung = hasLoai ? 8 : 7;
       body.items.forEach(function (it) {
         var rowId = Number(it.rowId);
         if (rowId < 2) throw new Error('rowId không hợp lệ: ' + it.rowId);
-        sh.getRange(rowId, 8).setNumberFormat('@').setValue(String(it.trung));
+        sh.getRange(rowId, colTrung).setNumberFormat('@').setValue(String(it.trung));
       });
       return json_({ status: 'success', updated: body.items.length });
     }
@@ -181,7 +262,8 @@ function doPost(e) {
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('🎰 LUCKY QQ99')
-    .addItem('Tạo / Cập nhật tab CUOC (8 cột)', 'setupCuoc')
+    .addItem('⚡ Nâng cấp tab CUOC lên 8 cột (Thêm Loại cược)', 'upgradeCuocTo8Cols')
+    .addItem('Tạo mới / Định dạng lại tab CUOC (8 cột)', 'setupCuoc')
     .addItem('Chép dữ liệu từ tab KHÁCH cũ', 'migrateFromKhach')
     .addToUi();
 }

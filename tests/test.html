@@ -2,7 +2,7 @@
 <html lang="vi"><head><meta charset="utf-8"><title>LUCKY QQ99 - Tests</title>
 <style>body{font-family:system-ui;margin:20px}td,th{border:1px solid #ccc;padding:3px 8px;font-size:13px}.ok{color:#047857}.bad{color:#b91c1c;font-weight:bold}</style></head>
 <body>
-<h2>LUCKY QQ99 - Kiểm thử (chạy qua <code>python3 backend/dev_server.py</code>, mở /tests/test.html)</h2>
+<h2>LUCKY QQ99 - Kiểm Thử Trực Tiếp (Mở trực tiếp trên trình duyệt)</h2>
 <div id="summary">Đang chạy...</div><pre id="log"></pre><table id="t"></table>
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/stations.js"></script>
@@ -33,6 +33,12 @@ function eq(name, got, want) {
     eq('digitLength Bao Lô 4 số', Calculator.getDigitLength('Bao Lô 4 số'), 4);
     eq('digitLength Đầu Đuôi', Calculator.getDigitLength('Đầu Đuôi'), 2);
     eq('digitLength Xỉu Chủ Đầu', Calculator.getDigitLength('Xỉu Chủ Đầu'), 3);
+    eq('inferLoaiCuoc 406', Calculator.inferLoaiCuoc('406'), 'Bao Lô 3 số');
+    eq('inferLoaiCuoc 123 456', Calculator.inferLoaiCuoc('123 456'), 'Bao Lô 3 số');
+    eq('inferLoaiCuoc 1234', Calculator.inferLoaiCuoc('1234'), 'Bao Lô 4 số');
+    eq('inferLoaiCuoc 08 80', Calculator.inferLoaiCuoc('08 80'), 'Bao Lô 2 số');
+    eq('enrichTicket tự phục hồi 406', Calculator.enrichTicket({ player: 'X', so: '406', tien: 5000, mien: 'Nam', dai: 'Đồng Nai' }).loaiCuoc, 'Bao Lô 3 số');
+    eq('enrichTicket giữ nguyên 406 không bị cắt thành 06', Calculator.enrichTicket({ player: 'X', so: '406', tien: 5000, mien: 'Nam', dai: 'Đồng Nai' }).so, '406');
     eq('parseNumbers 2 digits', Calculator.parseNumbers('8 80 9', 2), ['08', '80', '09']);
     eq('parseNumbers 3 digits', Calculator.parseNumbers('123 456 7', 3), ['123', '456', '007']);
     eq('parseNumbers 4 digits', Calculator.parseNumbers('1234 5678', 4), ['1234', '5678']);

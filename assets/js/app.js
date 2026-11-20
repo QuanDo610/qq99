@@ -9,13 +9,26 @@
 // Trạng thái ứng dụng
 const AppState = {
   tickets: [],
-  selectedDate: 'ALL', // 'ALL' hoặc 'DD/MM/YYYY'
-  viewMode: 'standard', // 'standard' | 'full' | 'privacy'
-  mainTab: 'tickets', // 'tickets' | 'daily' | 'players'
-  expandedRowIds: new Set(),
+  currentPage: 1,
+  pageSize: 30, // Mặc định 30 dòng / trang
+  currentDetailIndex: null,
+  currentDetailTab: 'khach',
   formDai: new Set(),
   isLoading: false
 };
+
+/** Sắp xếp vé từ ngày mới nhất đến cũ nhất */
+function sortTicketsByDateDesc(tickets) {
+  return tickets.sort((a, b) => {
+    const da = Stations.parseDate(a.date);
+    const db = Stations.parseDate(b.date);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return db - da;
+  });
+}
+window.sortTicketsByDateDesc = sortTicketsByDateDesc;
 
 // Khởi tạo khi DOM sẵn sàng
 document.addEventListener('DOMContentLoaded', async () => {
@@ -25,19 +38,79 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * 1. Khởi tạo bộ lọc ngày
+ * 1. Khởi tạo bộ lọc ngày (Mặc định chọn ngày hôm nay)
  */
 function initDateFilters() {
   const today = new Date();
   const d = String(today.getDate()).padStart(2, '0');
   const m = String(today.getMonth() + 1).padStart(2, '0');
   const y = today.getFullYear();
-  const dateInput = document.getElementById('filterDate');
-  if (dateInput) {
-    dateInput.value = `${y}-${m}-${d}`;
-    AppState.selectedDate = `${d}/${m}/${y}`;
-  }
+  const todayStr = `${y}-${m}-${d}`;
+
+  const fromInput = document.getElementById('filterDateFrom');
+  const toInput = document.getElementById('filterDateTo');
+  if (fromInput && !fromInput.value) fromInput.value = todayStr;
+  if (toInput && !toInput.value) toInput.value = todayStr;
 }
+
+/** Chuyển đổi định dạng Date sang YYYY-MM-DD */
+function formatDateIso(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Sự kiện khi thay đổi ngày Từ hoặc Đến */
+function onDateRangeChange() {
+  const chkAll = document.getElementById('chkViewAll');
+  const fromInput = document.getElementById('filterDateFrom');
+  const toInput = document.getElementById('filterDateTo');
+
+  // Nếu người dùng chọn ngày thì bỏ tick "Tất cả"
+  if (event && event.target !== chkAll && (fromInput?.value || toInput?.value)) {
+    if (chkAll) chkAll.checked = false;
+  }
+
+  AppState.currentPage = 1;
+  renderDashboard();
+}
+window.onDateRangeChange = onDateRangeChange;
+
+/** Các nút chọn nhanh khoảng ngày */
+function setDateRangeQuick(type) {
+  const fromInput = document.getElementById('filterDateFrom');
+  const toInput = document.getElementById('filterDateTo');
+  const chkAll = document.getElementById('chkViewAll');
+  const today = new Date();
+
+  if (type === 'all') {
+    if (chkAll) chkAll.checked = true;
+  } else {
+    if (chkAll) chkAll.checked = false;
+    if (type === 'today') {
+      const s = formatDateIso(today);
+      if (fromInput) fromInput.value = s;
+      if (toInput) toInput.value = s;
+    } else if (type === 'yesterday') {
+      const y = new Date(today);
+      y.setDate(y.getDate() - 1);
+      const s = formatDateIso(y);
+      if (fromInput) fromInput.value = s;
+      if (toInput) toInput.value = s;
+    } else if (type === '7days') {
+      const past = new Date(today);
+      past.setDate(past.getDate() - 6);
+      if (fromInput) fromInput.value = formatDateIso(past);
+      if (toInput) toInput.value = formatDateIso(today);
+    } else if (type === 'thisMonth') {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      if (fromInput) fromInput.value = formatDateIso(start);
+      if (toInput) toInput.value = formatDateIso(today);
+    }
+  }
+
+  AppState.currentPage = 1;
+  renderDashboard();
+}
+window.setDateRangeQuick = setDateRangeQuick;
 
 /**
  * 2. Tải dữ liệu từ Google Sheet (tab CUOC) hoặc LocalStorage dự phòng
@@ -49,8 +122,7 @@ async function loadDataFromSheetOrStorage() {
 
   try {
     const sheetRecords = await GoogleSheet.fetchSheetData();
-    AppState.tickets = sheetRecords.map(r => Calculator.enrichTicket(r));
-    AppState.expandedRowIds.clear();
+    AppState.tickets = sortTicketsByDateDesc(sheetRecords.map(r => Calculator.enrichTicket(r)));
     saveToLocalStorage();
 
     const syncBadge = document.getElementById('lastSyncBadge');
@@ -106,7 +178,7 @@ function rawOf(t) {
 function loadFromLocalStorage() {
   try {
     const saved = JSON.parse(localStorage.getItem('LOCAL_SHEET_BACKUP_V3') || '[]');
-    AppState.tickets = saved.map(r => Calculator.enrichTicket(r));
+    AppState.tickets = sortTicketsByDateDesc(saved.map(r => Calculator.enrichTicket(r)));
   } catch (e) {
     AppState.tickets = [];
   }
@@ -116,119 +188,222 @@ function saveToLocalStorage() {
   localStorage.setItem('LOCAL_SHEET_BACKUP_V3', JSON.stringify(AppState.tickets.map(rawOf)));
 }
 
-/** Các vé đang hiển thị theo bộ lọc ngày hiện tại */
+/** Các vé đang hiển thị theo bộ lọc ngày hiện tại (hỗ trợ khoảng từ ngày đến ngày) */
 function getFilteredTickets() {
-  const filterInput = document.getElementById('filterDate');
-  let selected = '';
-  if (filterInput && filterInput.value) {
-    const [y, m, d] = filterInput.value.split('-');
-    selected = `${d}/${m}/${y}`;
+  const chkAll = document.getElementById('chkViewAll')?.checked;
+  if (chkAll) {
+    return sortTicketsByDateDesc([...AppState.tickets]);
   }
-  const isViewAll = document.getElementById('chkViewAll')?.checked || false;
-  return isViewAll ? AppState.tickets : AppState.tickets.filter(t => !selected || t.date === selected || !t.date);
+
+  const fromVal = document.getElementById('filterDateFrom')?.value;
+  const toVal = document.getElementById('filterDateTo')?.value;
+
+  if (!fromVal && !toVal) {
+    return sortTicketsByDateDesc([...AppState.tickets]);
+  }
+
+  let fromDate = null;
+  let toDate = null;
+
+  if (fromVal) {
+    const [y, m, d] = fromVal.split('-').map(Number);
+    fromDate = new Date(y, m - 1, d, 0, 0, 0, 0);
+  }
+  if (toVal) {
+    const [y, m, d] = toVal.split('-').map(Number);
+    toDate = new Date(y, m - 1, d, 23, 59, 59, 999);
+  }
+
+  const list = AppState.tickets.filter(t => {
+    if (!t.date) return true;
+    const tDate = Stations.parseDate(t.date);
+    if (!tDate) return true;
+    if (fromDate && tDate < fromDate) return false;
+    if (toDate && tDate > toDate) return false;
+    return true;
+  });
+
+  return sortTicketsByDateDesc([...list]);
 }
+window.getFilteredTickets = getFilteredTickets;
 
-/**
- * 3. Chuyển đổi Chế Độ Xem (View Mode)
- * - 'standard': Mặc định hiển thị quan hệ Khách Hàng và Lợi Nhuận của Bạn (Q). Ẩn Nguồn để gọn gàng.
- * - 'full': Hiển thị đủ 13 cột chuẩn hóa (bao gồm cả Nguồn thu & Thưởng Nguồn trả).
- * - 'privacy': Chế độ riêng tư (chỉ hiện dữ liệu Khách Hàng, ẩn toàn bộ Nguồn và Lợi Nhuận Q).
- */
+// Tương thích ngược (nếu có lời gọi cũ)
 function setViewMode(mode) {
-  AppState.viewMode = mode;
-
-  const btnStandard = document.getElementById('btnViewStandard');
-  const btnFull = document.getElementById('btnViewFull');
-  const btnPrivacy = document.getElementById('btnViewPrivacy');
-
-  const activeClass = 'px-3 py-1.5 rounded-lg transition bg-white text-emerald-900 font-bold shadow-xs';
-  const inactiveClass = 'px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900';
-
-  if (btnStandard) btnStandard.className = mode === 'standard' ? activeClass : inactiveClass;
-  if (btnFull) btnFull.className = mode === 'full' ? activeClass : inactiveClass;
-  if (btnPrivacy) btnPrivacy.className = mode === 'privacy' ? activeClass : inactiveClass;
-
-  // Nếu chọn chế độ riêng tư, ẩn các thẻ Nguồn và Q trên Dashboard
-  const cardNguonThu = document.getElementById('cardNguonThu');
-  const cardQTrung = document.getElementById('cardQTrung');
-  const cardQLoi = document.getElementById('cardQLoi');
-
-  if (mode === 'privacy') {
-    if (cardNguonThu) cardNguonThu.classList.add('hidden');
-    if (cardQTrung) cardQTrung.classList.add('hidden');
-    if (cardQLoi) cardQLoi.classList.add('hidden');
-  } else {
-    if (cardNguonThu) cardNguonThu.classList.remove('hidden');
-    if (cardQTrung) cardQTrung.classList.remove('hidden');
-    if (cardQLoi) cardQLoi.classList.remove('hidden');
-  }
-
   renderDashboard();
 }
 window.setViewMode = setViewMode;
 
 /**
- * 4. Bung / Thu gọn Chi Tiết 3 Bên (Khách <-> Tôi <-> Nguồn) của từng dòng
+ * 4. Mở Popup Modal Chi Tiết Cược & Đối Soát 3 Bên (Khách <-> Tôi <-> Nguồn)
  */
-function toggleRowDetail(realIndex) {
-  if (AppState.expandedRowIds.has(realIndex)) {
-    AppState.expandedRowIds.delete(realIndex);
-  } else {
-    AppState.expandedRowIds.add(realIndex);
+function openTicketDetailModal(realIndex) {
+  const t = AppState.tickets[realIndex];
+  if (!t) return;
+  AppState.currentDetailIndex = realIndex;
+
+  const modal = document.getElementById('ticketDetailModal');
+  if (!modal) return;
+
+  const numbersStr = t.so || '';
+  const digitLen = Calculator.getDigitLength(t.loaiCuoc);
+  const numNumbers = Calculator.parseNumbers(numbersStr, digitLen).length || 1;
+  const matches = Number(t.trungNLo) || 0;
+  const pend = t.trungState === 'pending';
+  const khachLoiNumber = Number(t.khachLoi) || 0;
+  const ticketLaiXac = Number(t.thuKhach || 0) - Number(t.nguonThu || 0);
+  const ticketLaiThuong = Number(t.qTrung || 0) - Number(t.khachTrung || 0);
+
+  // Subtitle
+  const subEl = document.getElementById('detailModalSubtitle');
+  if (subEl) {
+    subEl.innerText = `${t.player || 'Khách'} • Ngày: ${t.date || '-'} • Miền ${t.mien} (${t.soDai} đài: ${t.dai})`;
   }
-  renderDashboard();
+
+  // Quick summary pills
+  const pPlayer = document.getElementById('detailQuickPlayer');
+  if (pPlayer) pPlayer.innerText = t.player || 'Khách';
+  const pMien = document.getElementById('detailQuickMien');
+  if (pMien) pMien.innerText = `${t.mien} (${t.soDai} đài)`;
+  const pLoai = document.getElementById('detailQuickLoai');
+  if (pLoai) pLoai.innerText = t.loaiCuoc || 'Bao Lô 2 số';
+  const pSo = document.getElementById('detailQuickSo');
+  if (pSo) pSo.innerText = `${numbersStr} (${numNumbers} con)`;
+  const pDiem = document.getElementById('detailQuickDiem');
+  if (pDiem) pDiem.innerText = `${Calculator.formatMoney(t.tien)} / con`;
+
+  const statusEl = document.getElementById('detailQuickStatus');
+  if (statusEl) {
+    if (pend) {
+      statusEl.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-bold">⏳ Chờ kết quả dò</span>`;
+    } else if (matches > 0) {
+      statusEl.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold">🎯 Trúng ${matches} nháy (${t.trung})</span>`;
+    } else {
+      statusEl.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 font-semibold">❌ Không trúng (Trượt)</span>`;
+    }
+  }
+
+  // Luôn hiển thị đầy đủ cả 3 khối Đối Soát 3 Bên (Khách <-> Tôi <-> Nguồn)
+  const boxKhach = document.getElementById('boxDetailKhach');
+  const boxNguon = document.getElementById('boxDetailNguon');
+  const boxQLoi = document.getElementById('boxDetailQLoi');
+
+  if (boxNguon) boxNguon.classList.remove('hidden');
+  if (boxQLoi) boxQLoi.classList.remove('hidden');
+  if (boxKhach) boxKhach.classList.remove('md:col-span-2');
+
+  // 1. VỚI KHÁCH HÀNG (THU & CHUNG KHÁCH)
+  const khachThuEl = document.getElementById('detailKhachThu');
+  if (khachThuEl) khachThuEl.innerText = `+${Calculator.formatMoney(t.thuKhach)}`;
+  const rateDesc = t.mien === 'Bắc' ? '1k cược = 21k xác' : `1k cược = ${14 * (Number(t.soDai) || 1)}k xác (${t.soDai} đài)`;
+  const khachThuFormEl = document.getElementById('detailKhachThuFormula');
+  if (khachThuFormEl) khachThuFormEl.innerText = `Cược ${Calculator.formatMoney(t.tien)} × ${numNumbers} con • ${rateDesc}`;
+
+  const khachTrungEl = document.getElementById('detailKhachTrung');
+  if (khachTrungEl) khachTrungEl.innerText = pend ? 'Chờ kết quả' : (matches > 0 ? `-${Calculator.formatMoney(t.khachTrung)}` : '0 đ');
+  const winMultiplier = (t.loaiCuoc === 'Bao Lô 3 số' || t.loaiCuoc === 'Xỉu Chủ' || (t.loaiCuoc || '').includes('Xỉu')) ? 'x620' : ((t.loaiCuoc === 'Bao Lô 4 số') ? 'x5200' : 'x72');
+  const khachTrungFormEl = document.getElementById('detailKhachTrungFormula');
+  if (khachTrungFormEl) khachTrungFormEl.innerText = pend ? 'Chưa mở thưởng' : (matches > 0 ? `Trúng ${matches} nháy × ${winMultiplier}` : 'Vé không trúng');
+
+  const khachLoiEl = document.getElementById('detailKhachLoi');
+  if (khachLoiEl) {
+    if (pend) {
+      khachLoiEl.innerText = '⏳ Chờ dò';
+      khachLoiEl.className = 'text-base font-bold text-slate-500 font-mono-num';
+    } else if (khachLoiNumber > 0) {
+      khachLoiEl.innerText = `+${Calculator.formatMoney(khachLoiNumber)} (Khách Lời)`;
+      khachLoiEl.className = 'text-base font-black text-emerald-700 font-mono-num';
+    } else if (khachLoiNumber < 0) {
+      khachLoiEl.innerText = `${Calculator.formatMoney(khachLoiNumber)} (Khách Lỗ)`;
+      khachLoiEl.className = 'text-base font-black text-rose-600 font-mono-num';
+    } else {
+      khachLoiEl.innerText = '0 đ (Hòa tiền)';
+      khachLoiEl.className = 'text-base font-bold text-slate-600 font-mono-num';
+    }
+  }
+
+  // 2. VỚI CHỦ NGUỒN (NỘP & THU CỦA NGUỒN)
+  const nguonThuEl = document.getElementById('detailNguonThu');
+  if (nguonThuEl) nguonThuEl.innerText = `-${Calculator.formatMoney(t.nguonThu)}`;
+  const nguonThuFormEl = document.getElementById('detailNguonThuFormula');
+  if (nguonThuFormEl) nguonThuFormEl.innerText = `76% làm tròn bỏ lẻ nghìn • Gốc: ${Calculator.formatMoney(t.thuKhach)}`;
+
+  const qTrungEl = document.getElementById('detailQTrung');
+  if (qTrungEl) qTrungEl.innerText = pend ? 'Chờ kết quả' : (matches > 0 ? `+${Calculator.formatMoney(t.qTrung)}` : '0 đ');
+  const qTrungFormEl = document.getElementById('detailQTrungFormula');
+  if (qTrungFormEl) qTrungFormEl.innerText = matches > 0 ? `Thưởng Nguồn trả bạn theo tỷ lệ ăn x74 (+2k/1k)` : 'Không có thưởng';
+
+  const nguonBalanceEl = document.getElementById('detailNguonBalance');
+  if (nguonBalanceEl) {
+    if (pend) {
+      nguonBalanceEl.innerText = `Nộp xác: ${Calculator.formatMoney(t.nguonThu)} (Chờ đối soát)`;
+    } else {
+      const netNguon = Number(t.qTrung || 0) - Number(t.nguonThu || 0);
+      nguonBalanceEl.innerText = netNguon >= 0 ? `Nguồn chung cho bạn ròng: +${Calculator.formatMoney(netNguon)}` : `Bạn nộp cho nguồn ròng: ${Calculator.formatMoney(Math.abs(netNguon))}`;
+    }
+  }
+
+  // 3. LỢI NHUẬN CỦA TÔI
+  const laiXacEl = document.getElementById('detailLaiXac');
+  if (laiXacEl) laiXacEl.innerText = `+${Calculator.formatMoney(ticketLaiXac)}`;
+  const laiXacSubEl = document.getElementById('detailLaiXacSub');
+  if (laiXacSubEl) laiXacSubEl.innerText = `Thu khách ${Calculator.formatMoney(t.thuKhach)} - Nộp nguồn ${Calculator.formatMoney(t.nguonThu)}`;
+
+  const laiThuongEl = document.getElementById('detailLaiThuong');
+  if (laiThuongEl) laiThuongEl.innerText = `+${Calculator.formatMoney(ticketLaiThuong)}`;
+  const laiThuongSubEl = document.getElementById('detailLaiThuongSub');
+  if (laiThuongSubEl) laiThuongSubEl.innerText = matches > 0 ? `Lãi +2k/điểm trúng (${matches} nháy × ${Calculator.formatMoney(t.tien)})` : '0 đ (vé chưa trúng)';
+
+  const qLoiTotalEl = document.getElementById('detailQLoiTotal');
+  if (qLoiTotalEl) qLoiTotalEl.innerText = `+${Calculator.formatMoney(t.qLoi)}`;
+
+  modal.classList.remove('hidden');
+  renderKatexMath(modal);
+}
+window.openTicketDetailModal = openTicketDetailModal;
+
+function closeTicketDetailModal() {
+  const modal = document.getElementById('ticketDetailModal');
+  if (modal) modal.classList.add('hidden');
+}
+window.closeTicketDetailModal = closeTicketDetailModal;
+
+function switchDetailTab(tab) {
+  // Không cần chuyển tab - giao diện đã hiển thị song song trực quan
+}
+window.switchDetailTab = switchDetailTab;
+
+function copyDetailCustomer() {
+  if (AppState.currentDetailIndex !== null) {
+    copyCustomerMessage(AppState.currentDetailIndex);
+  }
+}
+window.copyDetailCustomer = copyDetailCustomer;
+
+function copyDetailSource() {
+  if (AppState.currentDetailIndex !== null) {
+    copySourceMessage(AppState.currentDetailIndex);
+  }
+}
+window.copyDetailSource = copyDetailSource;
+
+// Tương thích ngược
+function toggleRowDetail(realIndex) {
+  openTicketDetailModal(realIndex);
 }
 window.toggleRowDetail = toggleRowDetail;
 
-/**
- * 5. Bung / Thu gọn toàn bộ các dòng đang hiển thị
- */
 function toggleAllDetails() {
-  const filterInput = document.getElementById('filterDate');
-  let selectedDateFormatted = 'ALL';
-  if (filterInput && filterInput.value) {
-    const [y, m, d] = filterInput.value.split('-');
-    selectedDateFormatted = `${d}/${m}/${y}`;
-  }
-  const isViewAll = document.getElementById('chkViewAll')?.checked || false;
-  const filteredTickets = isViewAll
-    ? AppState.tickets
-    : AppState.tickets.filter(t => !selectedDateFormatted || t.date === selectedDateFormatted || !t.date);
-
-  const visibleIndices = filteredTickets.map(t => AppState.tickets.indexOf(t));
-  if (visibleIndices.length === 0) return;
-
-  const allAreExpanded = visibleIndices.every(idx => AppState.expandedRowIds.has(idx));
-  if (allAreExpanded) {
-    visibleIndices.forEach(idx => AppState.expandedRowIds.delete(idx));
-    showToast('Thu gọn toàn bộ chi tiết');
-  } else {
-    visibleIndices.forEach(idx => AppState.expandedRowIds.add(idx));
-    showToast(`Đã bung chi tiết ${visibleIndices.length} dòng`);
-  }
-  renderDashboard();
+  // Không cần mở rộng accordion inline nữa
 }
 window.toggleAllDetails = toggleAllDetails;
 
 /**
- * 6. Render Dashboard: Thống Kê & Bảng Dữ Liệu
+ * 6. Render Dashboard: Thống Kê & Bảng Dữ Liệu Phân Trang
  */
 function renderDashboard() {
-  const filterInput = document.getElementById('filterDate');
-  let selectedDateFormatted = 'ALL';
+  const filteredTickets = getFilteredTickets();
 
-  if (filterInput && filterInput.value) {
-    const [y, m, d] = filterInput.value.split('-');
-    selectedDateFormatted = `${d}/${m}/${y}`;
-  }
-
-  const isViewAll = document.getElementById('chkViewAll')?.checked || false;
-
-  const filteredTickets = isViewAll
-    ? AppState.tickets
-    : AppState.tickets.filter(t => !selectedDateFormatted || t.date === selectedDateFormatted || !t.date);
-
-  // 1. Tính toán số liệu thống kê tổng hợp
+  // 1. Tính toán số liệu thống kê tổng hợp (toàn bộ các vé trong khoảng lọc)
   let totalThuKhach = 0;
   let totalNguonThu = 0;
   let totalKhachTrung = 0;
@@ -244,371 +419,121 @@ function renderDashboard() {
   });
 
   // Cập nhật lên các Card Thống Kê
-  document.getElementById('statThuKhach').innerText = Calculator.formatMoney(totalThuKhach);
-  document.getElementById('statNguonThu').innerText = Calculator.formatMoney(totalNguonThu);
-  document.getElementById('statKhachTrung').innerText = Calculator.formatMoney(totalKhachTrung);
-  document.getElementById('statQTrung').innerText = Calculator.formatMoney(totalQTrung);
+  const elThuKhach = document.getElementById('statThuKhach');
+  if (elThuKhach) elThuKhach.innerText = Calculator.formatMoney(totalThuKhach);
+  const elNguonThu = document.getElementById('statNguonThu');
+  if (elNguonThu) elNguonThu.innerText = Calculator.formatMoney(totalNguonThu);
+  const elKhachTrung = document.getElementById('statKhachTrung');
+  if (elKhachTrung) elKhachTrung.innerText = Calculator.formatMoney(totalKhachTrung);
+  const elQTrung = document.getElementById('statQTrung');
+  if (elQTrung) elQTrung.innerText = Calculator.formatMoney(totalQTrung);
 
   const qLoiEl = document.getElementById('statQLoi');
-  qLoiEl.innerText = (totalQLoi >= 0 ? '+' : '') + Calculator.formatMoney(totalQLoi);
-  qLoiEl.className = totalQLoi >= 0 ? 'text-2xl sm:text-3xl font-black text-amber-400 font-mono-num' : 'text-2xl sm:text-3xl font-black text-rose-400 font-mono-num';
+  if (qLoiEl) {
+    qLoiEl.innerText = (totalQLoi >= 0 ? '+' : '') + Calculator.formatMoney(totalQLoi);
+    qLoiEl.className = totalQLoi >= 0 ? 'text-2xl sm:text-3xl font-black text-amber-300 font-mono-num' : 'text-2xl sm:text-3xl font-black text-rose-400 font-mono-num';
+  }
 
   // Hiển thị chi tiết hoa hồng
   const laiXac = totalThuKhach - totalNguonThu;
   const laiThuong = totalQTrung - totalKhachTrung;
-  document.getElementById('statQLoiDetail').innerText = `Lãi xác: +${Calculator.formatMoney(laiXac)} • Thưởng x2: +${Calculator.formatMoney(laiThuong)}`;
+  const detailEl = document.getElementById('statQLoiDetail');
+  if (detailEl) {
+    detailEl.innerText = `Lãi xác: +${Calculator.formatMoney(laiXac)} • Thưởng x2: +${Calculator.formatMoney(laiThuong)}`;
+  }
 
-  // Cập nhật số lượng trên các tab chính
-  const distinctDates = [...new Set(AppState.tickets.map(t => t.date).filter(Boolean))];
-  const distinctPlayers = [...new Set(AppState.tickets.map(t => t.player).filter(Boolean))];
+  // Cập nhật huy hiệu tổng số dòng cược
+  const badgeEl = document.getElementById('recordCountBadge');
+  if (badgeEl) badgeEl.innerText = filteredTickets.length + ' dòng cược';
 
-  const elCountTickets = document.getElementById('tabCountTickets');
-  if (elCountTickets) elCountTickets.innerText = filteredTickets.length;
-  const elCountDaily = document.getElementById('tabCountDaily');
-  if (elCountDaily) elCountDaily.innerText = distinctDates.length;
-  const elCountPlayers = document.getElementById('tabCountPlayers');
-  if (elCountPlayers) elCountPlayers.innerText = distinctPlayers.length;
-
-  // Luôn cập nhật sẵn cả bảng Ngày và Khách Hàng
-  renderDailySummary();
-  renderPlayerSummary();
-
-  // 2. Render Header bảng theo Chế Độ Xem (View Mode)
+  // 2. Render Header bảng theo phong cách Riêng Tư Khách (Gọn gàng, sạch sẽ, bảo mật)
   const thead = document.getElementById('tableHeader');
   const tbody = document.getElementById('tableBody');
   const emptyNotice = document.getElementById('emptyNotice');
+  if (!tbody) return;
   tbody.innerHTML = '';
 
-  document.getElementById('recordCountBadge').innerText = filteredTickets.length + ' dòng cược';
-
-  let colSpan = 12;
-  if (AppState.viewMode === 'full') {
-    colSpan = 15;
+  if (thead) {
     thead.innerHTML = `
-      <tr class="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
-        <th class="py-3 px-3">Ngày</th>
-        <th class="py-3 px-3">Khách Hàng</th>
-        <th class="py-3 px-2 text-center">Miền</th>
-        <th class="py-3 px-2 text-center">Đài</th>
-        <th class="py-3 px-2 text-center bg-slate-700 text-amber-200">Loại Cược</th>
-        <th class="py-3 px-3">Số Đánh</th>
-        <th class="py-3 px-3 text-right">Điểm Cược</th>
-        <th class="py-3 px-3 text-right bg-emerald-900/60 text-emerald-200">Tiền Xác Khách</th>
-        <th class="py-3 px-3 text-right bg-indigo-900/60 text-indigo-200">Tiền Xác Nguồn</th>
-        <th class="py-3 px-2 text-center bg-teal-900/60 text-teal-200">Nháy Trúng</th>
-        <th class="py-3 px-3 text-right bg-orange-950/60 text-orange-200">Thưởng Trả Khách</th>
-        <th class="py-3 px-3 text-right bg-amber-950/60 text-amber-200">Thưởng Nguồn Trả</th>
-        <th class="py-3 px-3 text-right">Khách Lời / Lỗ</th>
-        <th class="py-3 px-3 text-right bg-emerald-800 text-amber-300 font-black">Lợi Nhuận Q</th>
-        <th class="py-3 px-3 text-center">Chi Tiết / Phơi</th>
-      </tr>
-    `;
-  } else if (AppState.viewMode === 'privacy') {
-    colSpan = 11;
-    thead.innerHTML = `
-      <tr class="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
+      <tr class="bg-slate-900 text-slate-100 font-bold text-xs uppercase tracking-wider">
         <th class="py-3 px-3">Ngày</th>
         <th class="py-3 px-3">Khách Hàng</th>
         <th class="py-3 px-2 text-center">Miền / Đài</th>
-        <th class="py-3 px-2 text-center bg-slate-700 text-amber-200">Loại Cược</th>
+        <th class="py-3 px-2 text-center">Loại Cược</th>
         <th class="py-3 px-3">Số Đánh</th>
-        <th class="py-3 px-3 text-right">Điểm Cược</th>
-        <th class="py-3 px-3 text-right bg-emerald-900/60 text-emerald-200">Tiền Xác</th>
-        <th class="py-3 px-2 text-center">Nháy Trúng</th>
-        <th class="py-3 px-3 text-right text-orange-200">Tiền Trúng</th>
+        <th class="py-3 px-3 text-right">Điểm</th>
+        <th class="py-3 px-3 text-right">Tiền Xác</th>
+        <th class="py-3 px-2 text-center">Kết Quả</th>
+        <th class="py-3 px-3 text-right">Tiền Trúng</th>
         <th class="py-3 px-3 text-right">Khách Lời / Lỗ</th>
-        <th class="py-3 px-3 text-center">Gửi Khách</th>
-      </tr>
-    `;
-  } else {
-    // Mode 'standard' (Mặc định: Tập trung Khách & Lợi Nhuận của Tôi)
-    colSpan = 12;
-    thead.innerHTML = `
-      <tr class="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
-        <th class="py-3 px-3">Ngày</th>
-        <th class="py-3 px-3">Khách Hàng</th>
-        <th class="py-3 px-2 text-center">Miền / Đài</th>
-        <th class="py-3 px-2 text-center bg-slate-700 text-amber-200">Loại Cược</th>
-        <th class="py-3 px-3">Số Đánh</th>
-        <th class="py-3 px-3 text-right">Điểm Cược</th>
-        <th class="py-3 px-3 text-right bg-emerald-900/60 text-emerald-200">Tiền Xác Khách</th>
-        <th class="py-3 px-2 text-center bg-teal-900/60 text-teal-200">Nháy Trúng</th>
-        <th class="py-3 px-3 text-right bg-orange-950/60 text-orange-200">Thưởng Trả Khách</th>
-        <th class="py-3 px-3 text-right">Khách Lời / Lỗ</th>
-        <th class="py-3 px-3 text-right bg-emerald-800 text-amber-300 font-black">Lợi Nhuận Q</th>
-        <th class="py-3 px-3 text-center">Chi Tiết / Phơi</th>
       </tr>
     `;
   }
 
   if (filteredTickets.length === 0) {
-    emptyNotice.classList.remove('hidden');
+    if (emptyNotice) emptyNotice.classList.remove('hidden');
+    renderPagination(0, 0, 0, 1);
     return;
   }
-  emptyNotice.classList.add('hidden');
+  if (emptyNotice) emptyNotice.classList.add('hidden');
 
-  // 3. Render từng dòng dữ liệu + Hàng bung chi tiết (Accordion Drill-Down)
-  filteredTickets.forEach((t) => {
+  // 3. Phân trang dữ liệu
+  const totalRows = filteredTickets.length;
+  const pageSize = AppState.pageSize === 'all' ? totalRows : (Number(AppState.pageSize) || 30);
+  const totalPages = Math.max(1, Math.ceil(totalRows / (pageSize || 1)));
+
+  if (AppState.currentPage > totalPages) AppState.currentPage = totalPages;
+  if (AppState.currentPage < 1) AppState.currentPage = 1;
+
+  const startIdx = (AppState.currentPage - 1) * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, totalRows);
+  const pagedTickets = filteredTickets.slice(startIdx, endIdx);
+
+  // 4. Render từng dòng vé trong trang hiện tại
+  pagedTickets.forEach((t) => {
     const realIndex = AppState.tickets.indexOf(t);
-    const isExpanded = AppState.expandedRowIds.has(realIndex);
 
     const tr = document.createElement('tr');
-    tr.className = `cursor-pointer transition border-b border-slate-100 ${isExpanded ? 'bg-emerald-50/40 font-medium' : 'hover:bg-slate-50'}`;
-    tr.title = 'Bấm để bung/thu gọn chi tiết đối soát 3 bên';
+    tr.className = 'hover:bg-emerald-50/60 transition border-b border-slate-100 cursor-pointer';
+    tr.title = 'Bấm vào để mở popup chi tiết đối soát 3 bên';
     tr.onclick = (e) => {
-      // Tránh bung khi bấm nút điều khiển nháy hoặc nút sao chép
+      // Tránh mở modal khi bấm thẳng vào nút sửa nháy con
       if (e.target.closest('button')) return;
-      toggleRowDetail(realIndex);
+      openTicketDetailModal(realIndex);
     };
 
     const numbersStr = t.so || '';
-    const digitLen = Calculator.getDigitLength(t.loaiCuoc);
-    const numNumbers = Calculator.parseNumbers(numbersStr, digitLen).length || 1;
-    const matches = Number(t.trungNLo) || 0;
     const pend = t.trungState === 'pending';
-
     const khachLoiNumber = Number(t.khachLoi) || 0;
-    const khachLoiClass = khachLoiNumber > 0 ? 'text-emerald-700 font-black' : (khachLoiNumber < 0 ? 'text-rose-600 font-black' : 'text-slate-500');
+    const khachLoiClass = khachLoiNumber > 0 ? 'text-emerald-700 font-black' : (khachLoiNumber < 0 ? 'text-rose-600 font-black' : 'text-slate-500 font-bold');
+    const loaiBadge = `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-300 whitespace-nowrap">${t.loaiCuoc || 'Bao Lô 2 số'}</span>`;
 
-    const ticketLaiXac = Number(t.thuKhach || 0) - Number(t.nguonThu || 0);
-    const ticketLaiThuong = Number(t.qTrung || 0) - Number(t.khachTrung || 0);
-
-    const loaiBadge = `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 whitespace-nowrap">${t.loaiCuoc || 'Bao Lô 2 số'}</span>`;
-
-    // Xây dựng các cột theo từng chế độ xem
-    if (AppState.viewMode === 'full') {
-      tr.innerHTML = `
-        <td class="py-3 px-3 font-mono text-xs text-slate-600 whitespace-nowrap">${t.date || '-'}</td>
-        <td class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap">
-          <span class="inline-block transition-transform mr-1 text-[10px] ${isExpanded ? 'text-emerald-600 font-black' : 'text-slate-400'}">${isExpanded ? '▼' : '▶'}</span>
-          ${t.player || 'Khách'}
-        </td>
-        <td class="py-3 px-2 text-center text-xs font-semibold whitespace-nowrap">
-          <span class="px-2 py-0.5 rounded ${t.mien === 'Bắc' ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'}">${t.mien}</span>
-        </td>
-        <td class="py-3 px-2 text-center text-xs font-bold text-slate-700 whitespace-nowrap" title="${t.dai}">${t.soDai} đài</td>
-        <td class="py-3 px-2 text-center whitespace-nowrap">${loaiBadge}</td>
-        <td class="py-3 px-3 font-mono font-bold text-slate-900 bg-slate-50 rounded">
-          <span class="text-emerald-950 font-black">${numbersStr}</span>
-        </td>
-        <td class="py-3 px-3 font-mono-num text-xs font-bold text-slate-700 text-right whitespace-nowrap">${Calculator.formatMoney(t.tien)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs font-bold text-slate-900 text-right bg-emerald-50/30 whitespace-nowrap">${Calculator.formatMoney(t.thuKhach)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs font-semibold text-indigo-900 text-right bg-indigo-50/30 whitespace-nowrap">${Calculator.formatMoney(t.nguonThu)}</td>
-        <td class="py-2 px-2 text-center whitespace-nowrap">${nhayCell(t, realIndex)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs font-bold text-orange-600 text-right whitespace-nowrap">${Calculator.formatMoney(t.khachTrung)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs font-bold text-amber-700 text-right whitespace-nowrap">${Calculator.formatMoney(t.qTrung)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs text-right whitespace-nowrap ${khachLoiClass}">
-          ${pend ? '—' : (khachLoiNumber > 0 ? '+' : '') + Calculator.formatMoney(t.khachLoi)}
-        </td>
-        <td class="py-3 px-3 font-mono-num text-sm font-black text-emerald-600 text-right bg-emerald-50/60 whitespace-nowrap">
-          +${Calculator.formatMoney(t.qLoi)}
-        </td>
-        <td class="py-3 px-3 whitespace-nowrap text-center">
-          <div class="flex items-center justify-center gap-1">
-            <button type="button" onclick="copyCustomerMessage(${realIndex})" title="Sao chép gửi Khách Hàng (Tuyệt đối an toàn)" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold shadow-xs active:scale-95 transition">👤 Khách</button>
-            <button type="button" onclick="copySourceMessage(${realIndex})" title="Sao chép nộp Chủ Nguồn" class="px-2 py-1 bg-indigo-700 hover:bg-indigo-600 text-white rounded text-xs font-bold shadow-xs active:scale-95 transition">🏢 Nguồn</button>
-          </div>
-        </td>
-      `;
-    } else if (AppState.viewMode === 'privacy') {
-      tr.innerHTML = `
-        <td class="py-3 px-3 font-mono text-xs text-slate-600 whitespace-nowrap">${t.date || '-'}</td>
-        <td class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap">
-          <span class="inline-block transition-transform mr-1 text-[10px] ${isExpanded ? 'text-emerald-600 font-black' : 'text-slate-400'}">${isExpanded ? '▼' : '▶'}</span>
-          ${t.player || 'Khách'}
-        </td>
-        <td class="py-3 px-2 text-center text-xs font-semibold whitespace-nowrap">
-          <span class="px-2 py-0.5 rounded ${t.mien === 'Bắc' ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'}">${t.mien} (${t.soDai} đài)</span>
-        </td>
-        <td class="py-3 px-2 text-center whitespace-nowrap">${loaiBadge}</td>
-        <td class="py-3 px-3 font-mono font-bold text-slate-900 bg-slate-50 rounded">
-          <span class="text-emerald-950 font-black">${numbersStr}</span>
-        </td>
-        <td class="py-3 px-3 font-mono-num text-xs font-bold text-slate-700 text-right whitespace-nowrap">${Calculator.formatMoney(t.tien)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs font-bold text-slate-900 text-right bg-emerald-50/30 whitespace-nowrap">${Calculator.formatMoney(t.thuKhach)}</td>
-        <td class="py-2 px-2 text-center whitespace-nowrap">${nhayCell(t, realIndex)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs font-bold text-orange-600 text-right whitespace-nowrap">${Calculator.formatMoney(t.khachTrung)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs text-right whitespace-nowrap ${khachLoiClass}">
-          ${pend ? '—' : (khachLoiNumber > 0 ? '+' : '') + Calculator.formatMoney(t.khachLoi)}
-        </td>
-        <td class="py-3 px-3 whitespace-nowrap text-center">
-          <button type="button" onclick="copyCustomerMessage(${realIndex})" title="Sao chép gửi Khách Hàng (Tuyệt đối an toàn)" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-xs active:scale-95 transition">👤 Gửi Khách</button>
-        </td>
-      `;
-    } else {
-      // Standard Mode
-      tr.innerHTML = `
-        <td class="py-3 px-3 font-mono text-xs text-slate-600 whitespace-nowrap">${t.date || '-'}</td>
-        <td class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap">
-          <span class="inline-block transition-transform mr-1 text-[10px] ${isExpanded ? 'text-emerald-600 font-black' : 'text-slate-400'}">${isExpanded ? '▼' : '▶'}</span>
-          ${t.player || 'Khách'}
-        </td>
-        <td class="py-3 px-2 text-center text-xs font-semibold whitespace-nowrap">
-          <span class="px-2 py-0.5 rounded ${t.mien === 'Bắc' ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'}">${t.mien} (${t.soDai} đài)</span>
-        </td>
-        <td class="py-3 px-2 text-center whitespace-nowrap">${loaiBadge}</td>
-        <td class="py-3 px-3 font-mono font-bold text-slate-900 bg-slate-50/80 rounded">
-          <span class="text-emerald-950 font-black">${numbersStr}</span>
-        </td>
-        <td class="py-3 px-3 font-mono-num text-xs font-bold text-slate-700 text-right whitespace-nowrap">${Calculator.formatMoney(t.tien)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs font-bold text-emerald-900 text-right bg-emerald-50/40 whitespace-nowrap">${Calculator.formatMoney(t.thuKhach)}</td>
-        <td class="py-2 px-2 text-center whitespace-nowrap">${nhayCell(t, realIndex)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs font-bold text-orange-600 text-right whitespace-nowrap">${Calculator.formatMoney(t.khachTrung)}</td>
-        <td class="py-3 px-3 font-mono-num text-xs text-right whitespace-nowrap ${khachLoiClass}">
-          ${pend ? '—' : (khachLoiNumber > 0 ? '+' : '') + Calculator.formatMoney(t.khachLoi)}
-        </td>
-        <td class="py-3 px-3 font-mono-num text-sm font-black text-emerald-700 text-right bg-emerald-50/70 whitespace-nowrap">
-          +${Calculator.formatMoney(t.qLoi)}
-        </td>
-        <td class="py-3 px-3 whitespace-nowrap text-center">
-          <div class="flex items-center justify-center gap-1.5">
-            <button type="button" onclick="toggleRowDetail(${realIndex})" title="Bung chi tiết đối soát 3 bên" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-bold border border-slate-200 shadow-2xs transition">
-              ${isExpanded ? 'Thu Gọn' : '👁️ Chi Tiết'}
-            </button>
-            <button type="button" onclick="copyCustomerMessage(${realIndex})" title="Sao chép kết quả gửi Khách Hàng (Tuyệt đối an toàn)" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold shadow-xs active:scale-95 transition">
-              👤 Gửi Khách
-            </button>
-          </div>
-        </td>
-      `;
-    }
+    tr.innerHTML = `
+      <td class="py-3 px-3 font-mono text-xs text-slate-700 whitespace-nowrap">${t.date || '-'}</td>
+      <td class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap">
+        ${t.player || 'Khách'}
+      </td>
+      <td class="py-3 px-2 text-center text-xs font-semibold whitespace-nowrap">
+        <span class="px-2 py-0.5 rounded ${t.mien === 'Bắc' ? 'bg-indigo-100 text-indigo-900' : 'bg-emerald-100 text-emerald-900'} font-bold">${t.mien} (${t.soDai} đài)</span>
+      </td>
+      <td class="py-3 px-2 text-center whitespace-nowrap">${loaiBadge}</td>
+      <td class="py-3 px-3 font-mono font-bold text-slate-900">
+        <span class="text-emerald-950 font-black bg-slate-100 px-2 py-0.5 rounded border border-slate-200">${numbersStr}</span>
+      </td>
+      <td class="py-3 px-3 font-mono-num text-xs font-bold text-slate-700 text-right whitespace-nowrap">${Calculator.formatMoney(t.tien)}</td>
+      <td class="py-3 px-3 font-mono-num text-xs font-bold text-slate-900 text-right whitespace-nowrap">${Calculator.formatMoney(t.thuKhach)}</td>
+      <td class="py-2 px-2 text-center whitespace-nowrap">${nhayCell(t, realIndex)}</td>
+      <td class="py-3 px-3 font-mono-num text-xs font-bold text-orange-700 text-right whitespace-nowrap">${Calculator.formatMoney(t.khachTrung)}</td>
+      <td class="py-3 px-3 font-mono-num text-xs text-right whitespace-nowrap ${khachLoiClass}">
+        ${pend ? '—' : (khachLoiNumber > 0 ? '+' : '') + Calculator.formatMoney(t.khachLoi)}
+      </td>
+    `;
 
     tbody.appendChild(tr);
-
-    // NẾU DÒNG ĐƯỢC CHỌN MỞ RỘNG (ACCORDION DRILL-DOWN 3 BÊN)
-    if (isExpanded) {
-      const detailTr = document.createElement('tr');
-      detailTr.id = `detail-row-${realIndex}`;
-      detailTr.className = 'detail-row-anim bg-slate-50/95 border-b-2 border-emerald-300';
-
-      detailTr.innerHTML = `
-        <td colspan="${colSpan}" class="p-3 sm:p-5">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
-            
-            <!-- THẺ 1: KHÁCH HÀNG (QUAN HỆ: KHÁCH <-> BẠN) -->
-            <div class="bg-white rounded-xl p-4 border border-emerald-200 shadow-xs space-y-2.5">
-              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span class="font-black text-emerald-800 text-xs flex items-center gap-1.5 uppercase tracking-wide">
-                  <span>👤</span> 1. Khách Hàng
-                </span>
-                <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-[11px]">${t.player}</span>
-              </div>
-              <div class="space-y-1.5 text-slate-600">
-                <div class="flex justify-between">
-                  <span>Loại cược:</span>
-                  <span class="font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${t.loaiCuoc || 'Bao Lô 2 số'}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Đài (${t.soDai}):</span>
-                  <span class="font-semibold text-slate-800 text-right">${t.dai}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Số đánh (${numNumbers} con):</span>
-                  <span class="font-mono font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">${numbersStr}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Điểm cược:</span>
-                  <span class="font-mono font-bold text-slate-900">${Calculator.formatMoney(t.tien)} / con</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Tiền xác thu khách:</span>
-                  <span class="font-mono font-bold text-emerald-700">${Calculator.formatMoney(t.thuKhach)}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Kết quả:</span>
-                  <span class="font-bold ${pend ? 'text-amber-600' : (matches > 0 ? 'text-emerald-700' : 'text-slate-400')}">${pend ? '⏳ Chưa dò' : (matches > 0 ? `🎯 Trúng ${matches} nháy (${t.trung})` : 'Trượt')}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Thưởng trả khách (x72):</span>
-                  <span class="font-mono font-bold text-orange-600">${Calculator.formatMoney(t.khachTrung)}</span>
-                </div>
-                <div class="flex justify-between pt-1 border-t border-slate-100 font-bold">
-                  <span>Khách Lời / Lỗ:</span>
-                  <span class="font-mono ${pend ? 'text-slate-400' : (khachLoiNumber > 0 ? 'text-emerald-700' : (khachLoiNumber < 0 ? 'text-rose-600' : 'text-slate-500'))}">
-                    ${pend ? 'chờ kết quả' : (khachLoiNumber > 0 ? '+' : '') + Calculator.formatMoney(t.khachLoi)}
-                  </span>
-                </div>
-              </div>
-              <button type="button" onclick="copyCustomerMessage(${realIndex})" class="w-full mt-2 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs">
-                <span>📋</span> Sao Chép Gửi Khách (Bảo Mật)
-              </button>
-            </div>
-
-            <!-- THẺ 2: CHỦ NGUỒN (QUAN HỆ: BẠN <-> NGUỒN) -->
-            ${AppState.viewMode === 'privacy' ? '' : `
-            <div class="bg-white rounded-xl p-4 border border-indigo-200 shadow-xs space-y-2.5">
-              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span class="font-black text-indigo-900 text-xs flex items-center gap-1.5 uppercase tracking-wide">
-                  <span>🏢</span> 2. Chủ Nguồn
-                </span>
-                <span class="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded text-[11px]">Nội Bộ</span>
-              </div>
-              <div class="space-y-1.5 text-slate-600">
-                <div class="flex justify-between">
-                  <span>Loại cược:</span>
-                  <span class="font-bold text-indigo-900 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">${t.loaiCuoc || 'Bao Lô 2 số'}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Quy tắc xác nộp:</span>
-                  <span class="text-[11px] text-indigo-700 font-bold">76% (làm tròn bỏ lẻ nghìn)</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Miền / Số đài:</span>
-                  <span class="font-semibold text-slate-800">${t.mien} (${t.soDai} đài)</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Tiền xác nộp nguồn:</span>
-                  <span class="font-mono font-bold text-indigo-900">${Calculator.formatMoney(t.nguonThu)}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Thưởng Nguồn trả bạn (x74):</span>
-                  <span class="font-mono font-bold text-amber-600">${Calculator.formatMoney(t.qTrung)}</span>
-                </div>
-                <div class="flex justify-between pt-1 border-t border-slate-100 text-slate-500">
-                  <span>Trạng thái phơi cược:</span>
-                  <span class="font-semibold text-emerald-700">Đã khớp phơi</span>
-                </div>
-              </div>
-              <button type="button" onclick="copySourceMessage(${realIndex})" class="w-full mt-2 py-2 bg-indigo-700 hover:bg-indigo-600 text-white font-bold rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs">
-                <span>📤</span> Sao Chép Phơi Nộp Nguồn
-              </button>
-            </div>
-
-            <!-- THẺ 3: LỢI NHUẬN CỦA BẠN (Q) -->
-            <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-xl p-4 border border-emerald-500/40 shadow-md space-y-2.5">
-              <div class="flex items-center justify-between pb-2 border-b border-slate-700">
-                <span class="font-black text-amber-300 text-xs flex items-center gap-1.5 uppercase tracking-wide">
-                  <span>🏆</span> 3. Lợi Nhuận Của Tôi (Q)
-                </span>
-                <span class="font-bold text-emerald-300 bg-emerald-900/60 px-2 py-0.5 rounded text-[11px]">Lãi Ròng</span>
-              </div>
-              <div class="space-y-1.5 text-slate-300">
-                <div class="flex justify-between">
-                  <span>Lãi xác (Thu - Nộp):</span>
-                  <span class="font-mono font-bold text-emerald-300">+${Calculator.formatMoney(ticketLaiXac)}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Lãi thưởng (+2k/1k điểm trúng):</span>
-                  <span class="font-mono font-bold text-amber-300">+${Calculator.formatMoney(ticketLaiThuong)}</span>
-                </div>
-                <div class="flex justify-between pt-2 border-t border-slate-700/80 font-black text-sm">
-                  <span class="text-white">TỔNG LÃI BỎ TÚI:</span>
-                  <span class="font-mono text-amber-400 text-base font-black">+${Calculator.formatMoney(t.qLoi)}</span>
-                </div>
-              </div>
-              <div class="bg-white/10 rounded-lg p-2 text-[10px] text-emerald-200 mt-2 leading-relaxed">
-                💡 Bạn ăn trọn <strong>chênh lệch xác</strong> (thu khách $14k/21k$ - nộp nguồn $76\%$) + <strong>chênh lệch trả thưởng</strong> ($x74 - x72 = 2k$/điểm).
-              </div>
-            </div>
-            `}
-
-          </div>
-        </td>
-      `;
-
-      tbody.appendChild(detailTr);
-    }
   });
+
+  // Cập nhật giao diện phân trang
+  renderPagination(totalRows, startIdx, endIdx, totalPages);
 
   // Re-render KaTeX math nếu có biểu thức toán học
   if (typeof renderKatexMath === 'function') {
@@ -618,169 +543,89 @@ function renderDashboard() {
 window.renderDashboard = renderDashboard;
 
 /**
- * Chuyển đổi tab chính của bảng:
- * - 'tickets': Danh sách vé cược chi tiết + Accordion
- * - 'daily': Bảng tổng kết lời / lỗ theo từng ngày
- * - 'players': Bảng đối soát theo từng khách hàng
+ * 7. Phân Trang (Pagination)
  */
-function switchMainTab(tab) {
-  AppState.mainTab = tab;
+function renderPagination(totalRows, startIdx, endIdx, totalPages) {
+  const infoEl = document.getElementById('paginationInfo');
+  const indEl = document.getElementById('pageCurrentIndicator');
+  const btnFirst = document.getElementById('btnPageFirst');
+  const btnPrev = document.getElementById('btnPagePrev');
+  const btnNext = document.getElementById('btnPageNext');
+  const btnLast = document.getElementById('btnPageLast');
+  const select = document.getElementById('pageSizeSelect');
 
-  const btnTickets = document.getElementById('tabBtnTickets');
-  const btnDaily = document.getElementById('tabBtnDaily');
-  const btnPlayers = document.getElementById('tabBtnPlayers');
+  if (select) select.value = String(AppState.pageSize);
 
-  const viewTickets = document.getElementById('viewTickets');
-  const viewDaily = document.getElementById('viewDaily');
-  const viewPlayers = document.getElementById('viewPlayers');
-  const hint = document.getElementById('tabViewHint');
-
-  const activeClass = 'px-3.5 py-2 rounded-xl transition bg-emerald-700 text-white shadow-xs flex items-center gap-1.5';
-  const inactiveClass = 'px-3.5 py-2 rounded-xl transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5';
-
-  if (btnTickets) btnTickets.className = tab === 'tickets' ? activeClass : inactiveClass;
-  if (btnDaily) btnDaily.className = tab === 'daily' ? activeClass : inactiveClass;
-  if (btnPlayers) btnPlayers.className = tab === 'players' ? activeClass : inactiveClass;
-
-  if (viewTickets) viewTickets.classList.toggle('hidden', tab !== 'tickets');
-  if (viewDaily) viewDaily.classList.toggle('hidden', tab !== 'daily');
-  if (viewPlayers) viewPlayers.classList.toggle('hidden', tab !== 'players');
-
-  if (hint) {
-    if (tab === 'tickets') hint.innerText = '💡 Bấm vào từng dòng để xem ngăn đối soát 3 bên';
-    else if (tab === 'daily') hint.innerText = '💡 Bấm "Xem Vé" ở cột cuối để lọc nhanh các vé của ngày đó';
-    else hint.innerText = '💡 Tổng hợp doanh thu và lợi nhuận ròng mang lại từ từng khách hàng';
+  if (infoEl) {
+    if (totalRows === 0) {
+      infoEl.innerText = '0 / 0 dòng cược';
+    } else {
+      infoEl.innerText = `Hiển thị ${startIdx + 1} - ${endIdx} / ${totalRows} dòng cược`;
+    }
   }
 
+  if (indEl) {
+    indEl.innerText = `Trang ${AppState.currentPage} / ${totalPages}`;
+  }
+
+  const isFirst = AppState.currentPage <= 1;
+  const isLast = AppState.currentPage >= totalPages;
+
+  if (btnFirst) btnFirst.disabled = isFirst;
+  if (btnPrev) btnPrev.disabled = isFirst;
+  if (btnNext) btnNext.disabled = isLast;
+  if (btnLast) btnLast.disabled = isLast;
+}
+
+function changePageSize(val) {
+  AppState.pageSize = val === 'all' ? 'all' : (Number(val) || 30);
+  AppState.currentPage = 1;
   renderDashboard();
 }
-window.switchMainTab = switchMainTab;
+window.changePageSize = changePageSize;
+
+function goToPage(p) {
+  const filtered = getFilteredTickets();
+  const pageSize = AppState.pageSize === 'all' ? filtered.length : (Number(AppState.pageSize) || 30);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / (pageSize || 1)));
+
+  if (p === 'last') p = totalPages;
+  AppState.currentPage = Math.max(1, Math.min(totalPages, Number(p) || 1));
+  renderDashboard();
+}
+window.goToPage = goToPage;
+
+function prevPage() {
+  if (AppState.currentPage > 1) {
+    AppState.currentPage--;
+    renderDashboard();
+  }
+}
+window.prevPage = prevPage;
+
+function nextPage() {
+  const filtered = getFilteredTickets();
+  const pageSize = AppState.pageSize === 'all' ? filtered.length : (Number(AppState.pageSize) || 30);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / (pageSize || 1)));
+  if (AppState.currentPage < totalPages) {
+    AppState.currentPage++;
+    renderDashboard();
+  }
+}
+window.nextPage = nextPage;
+
+
 
 /**
  * Render Bảng Tổng Kết Lời / Lỗ Theo Từng Ngày
  */
-function renderDailySummary() {
-  const tbody = document.getElementById('dailyTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  const groups = {};
-  AppState.tickets.forEach(t => {
-    const d = t.date || 'Chưa có ngày';
-    (groups[d] = groups[d] || []).push(t);
-  });
-
-  const sortedDates = Object.keys(groups).sort((a, b) => {
-    const da = Stations.parseDate(a);
-    const db = Stations.parseDate(b);
-    if (!da || !db) return 0;
-    return db - da;
-  });
-
-  sortedDates.forEach(dateStr => {
-    const list = groups[dateStr];
-    let thuKhach = 0, nguonThu = 0, khachTrung = 0, qTrung = 0, qLoi = 0;
-    list.forEach(t => {
-      thuKhach += Number(t.thuKhach) || 0;
-      nguonThu += Number(t.nguonThu) || 0;
-      khachTrung += Number(t.khachTrung) || 0;
-      qTrung += Number(t.qTrung) || 0;
-      qLoi += Number(t.qLoi) || 0;
-    });
-    const laiXac = thuKhach - nguonThu;
-    const laiThuong = qTrung - khachTrung;
-    const khachLoi = khachTrung - thuKhach;
-    const weekday = Stations.weekdayName(dateStr);
-
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
-    tr.innerHTML = `
-      <td class="py-3 px-3 font-mono font-bold text-slate-900">${dateStr}</td>
-      <td class="py-3 px-3 text-slate-600 font-sans font-medium text-xs">${weekday || '-'}</td>
-      <td class="py-3 px-2 text-center font-bold text-slate-700">${list.length} vé</td>
-      <td class="py-3 px-3 text-right bg-emerald-50/40 text-emerald-950 font-bold">${Calculator.formatMoney(thuKhach)}</td>
-      <td class="py-3 px-3 text-right bg-indigo-50/40 text-indigo-900">${Calculator.formatMoney(nguonThu)}</td>
-      <td class="py-3 px-3 text-right font-bold text-emerald-700">+${Calculator.formatMoney(laiXac)}</td>
-      <td class="py-3 px-3 text-right text-orange-600 font-bold">${Calculator.formatMoney(khachTrung)}</td>
-      <td class="py-3 px-3 text-right text-amber-700 font-bold">${Calculator.formatMoney(qTrung)}</td>
-      <td class="py-3 px-3 text-right text-amber-700 font-bold">+${Calculator.formatMoney(laiThuong)}</td>
-      <td class="py-3 px-3 text-right font-bold ${khachLoi > 0 ? 'text-emerald-700' : (khachLoi < 0 ? 'text-rose-600' : 'text-slate-500')}">
-        ${khachLoi > 0 ? '+' : ''}${Calculator.formatMoney(khachLoi)}
-      </td>
-      <td class="py-3 px-3 text-right font-black text-emerald-600 bg-emerald-50/70 text-sm">
-        +${Calculator.formatMoney(qLoi)}
-      </td>
-      <td class="py-3 px-2 text-center">
-        <button type="button" onclick="filterByDateAndSwitch('${dateStr}')" title="Xem danh sách vé của ngày này" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg border border-slate-200 shadow-2xs transition">
-          👁️ Xem
-        </button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function filterByDateAndSwitch(dateStr) {
-  const d = Stations.parseDate(dateStr);
-  if (d) {
-    const input = document.getElementById('filterDate');
-    const chk = document.getElementById('chkViewAll');
-    if (chk) chk.checked = false;
-    if (input) {
-      input.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }
-  }
-  switchMainTab('tickets');
-}
-window.filterByDateAndSwitch = filterByDateAndSwitch;
+function renderDailySummary() {}
+window.filterByDateAndSwitch = function() {};
 
 /**
  * Render Bảng Đối Soát Theo Từng Khách Hàng
  */
-function renderPlayerSummary() {
-  const tbody = document.getElementById('playersTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  const groups = {};
-  AppState.tickets.forEach(t => {
-    const p = t.player || 'Khách';
-    (groups[p] = groups[p] || []).push(t);
-  });
-
-  const sortedPlayers = Object.keys(groups).sort((a, b) => groups[b].length - groups[a].length);
-
-  sortedPlayers.forEach(player => {
-    const list = groups[player];
-    let thuKhach = 0, khachTrung = 0, qLoi = 0;
-    list.forEach(t => {
-      thuKhach += Number(t.thuKhach) || 0;
-      khachTrung += Number(t.khachTrung) || 0;
-      qLoi += Number(t.qLoi) || 0;
-    });
-    const khachLoi = khachTrung - thuKhach;
-
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
-    tr.innerHTML = `
-      <td class="py-3 px-4 font-bold text-slate-900">${player}</td>
-      <td class="py-3 px-2 text-center font-bold text-slate-700">${list.length} vé</td>
-      <td class="py-3 px-3 text-right bg-emerald-50/40 text-emerald-950 font-bold">${Calculator.formatMoney(thuKhach)}</td>
-      <td class="py-3 px-3 text-right bg-orange-50/40 text-orange-600 font-bold">${Calculator.formatMoney(khachTrung)}</td>
-      <td class="py-3 px-3 text-right font-bold ${khachLoi > 0 ? 'text-emerald-700' : (khachLoi < 0 ? 'text-rose-600' : 'text-slate-500')}">
-        ${khachLoi > 0 ? '+' : ''}${Calculator.formatMoney(khachLoi)}
-        <span class="block text-[10px] font-normal text-slate-400 font-sans">${khachLoi > 0 ? '(khách đang lời)' : (khachLoi < 0 ? '(khách đang lỗ)' : '(hòa tiền)')}</span>
-      </td>
-      <td class="py-3 px-3 text-right font-black text-emerald-600 bg-emerald-50/70 text-sm">
-        +${Calculator.formatMoney(qLoi)}
-      </td>
-      <td class="py-3 px-2 text-center">
-        <span class="text-xs text-slate-400 font-sans">${list.length} vé đã khớp</span>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
+function renderPlayerSummary() {}
 
 /**
  * 4. Tăng / Giảm số nháy trúng thưởng trực tiếp trên từng vé
@@ -835,55 +680,39 @@ async function editTrung(realIndex) {
 }
 window.editTrung = editTrung;
 
-/** DÒ TỰ ĐỘNG: lấy kết quả xổ số theo ngày đã chọn trên bộ lọc (tránh dò lại ngày cũ) */
+/** DÒ TỰ ĐỘNG: lấy kết quả xổ số cho các vé đang chờ dò trong phạm vi ngày đang lọc */
 async function runAutoCheck() {
   const btn = document.getElementById('btnAutoCheck');
   const report = document.getElementById('checkReport');
-  const filterInput = document.getElementById('filterDate');
 
-  let targetDate = '';
-  if (filterInput && filterInput.value) {
-    const [y, m, d] = filterInput.value.split('-');
-    targetDate = `${d}/${m}/${y}`;
-  }
+  const filteredTickets = getFilteredTickets();
+  const targetPending = filteredTickets.filter(t => t.trungState === 'pending');
 
-  // Nếu người dùng đang tick "Xem tất cả", tự động bỏ tick để hiển thị đúng ngày dò
-  const chkViewAll = document.getElementById('chkViewAll');
-  if (chkViewAll && chkViewAll.checked && targetDate) {
-    chkViewAll.checked = false;
-    renderDashboard();
-  }
-
-  if (!targetDate) {
-    showToast('⚠️ Vui lòng chọn một ngày cụ thể trên thanh lọc để dò kết quả!', 'warning');
-    return;
-  }
-
-  const targetPending = AppState.tickets.filter(t => t.trungState === 'pending' && t.date === targetDate);
   if (!targetPending.length) {
-    showToast(`Không có vé nào đang chờ dò cho ngày ${targetDate}`, 'warning');
+    showToast('Không có vé nào đang chờ dò trong danh sách đang lọc', 'warning');
     return;
   }
 
-  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="inline-block animate-spin">⏳</span> Đang dò ngày ${targetDate}...`; }
+  const distinctDates = [...new Set(targetPending.map(t => t.date))].join(', ');
+
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="inline-block animate-spin">⏳</span> Đang dò ${targetPending.length} vé...`; }
   try {
-    const { settled, waiting, errors } = await AutoChecker.autoCheck(AppState.tickets, t => t.date === targetDate);
+    const { settled, waiting, errors } = await AutoChecker.autoCheck(AppState.tickets, t => targetPending.includes(t));
     const r = await commitTrung(settled);
 
     const lines = [];
-    lines.push(`<b>Ngày ${targetDate}: Đã dò xong ${settled.length}/${targetPending.length} vé.</b>`);
+    lines.push(`<b>Đã dò xong ${settled.length}/${targetPending.length} vé (${distinctDates}).</b>`);
     if (r.sheetError) lines.push(`⚠️ Chưa ghi được vào Sheet: ${r.sheetError}`);
     else if (settled.length && !GoogleSheet.canWrite()) lines.push('🔒 Chưa kết nối Apps Script nên kết quả dò chỉ lưu tạm trên web.');
     waiting.forEach(w => lines.push(`⏳ ${w.group}: ${w.reason}${w.count > 1 ? ` (${w.count} vé)` : ''}`));
     errors.forEach(e => lines.push(`❌ ${e}`));
     if (report) { report.innerHTML = lines.map(l => `<div>${l}</div>`).join(''); report.classList.remove('hidden'); }
-    showToast(`🔎 Đã dò ngày ${targetDate}: ${settled.length}/${targetPending.length} vé` + (waiting.length || errors.length ? ' (xem chi tiết)' : ''), settled.length ? 'success' : 'warning');
+    showToast(`🔎 Đã dò: ${settled.length}/${targetPending.length} vé` + (waiting.length || errors.length ? ' (xem chi tiết)' : ''), settled.length ? 'success' : 'warning');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '<span>🔎</span> Dò Tự Động'; }
   }
 }
 window.runAutoCheck = runAutoCheck;
-
 
 /**
  * 5. Mở / Đóng Modal Thêm Số Mới
@@ -892,9 +721,11 @@ function openAddModal() {
   const modal = document.getElementById('addModal');
   if (modal) {
     modal.classList.remove('hidden');
-    const filterInput = document.getElementById('filterDate');
-    if (filterInput && filterInput.value) {
-      document.getElementById('inputDate').value = filterInput.value;
+    const fromInput = document.getElementById('filterDateFrom');
+    const toInput = document.getElementById('filterDateTo');
+    const targetDate = toInput?.value || fromInput?.value;
+    if (targetDate) {
+      document.getElementById('inputDate').value = targetDate;
     } else {
       const n = new Date();
       document.getElementById('inputDate').value = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
@@ -1051,6 +882,7 @@ async function saveNewTicket() {
   const newTicket = Calculator.enrichTicket(rawTicket);
 
   AppState.tickets.unshift(newTicket);
+  sortTicketsByDateDesc(AppState.tickets);
   saveToLocalStorage();
   renderDashboard();
   closeAddModal();
@@ -1074,86 +906,11 @@ window.saveNewTicket = saveNewTicket;
 /**
  * 8. MODAL NHẬP SỐ TRÚNG THƯỞNG LINH HOẠT (19.3, 19x3, 19 19 19...)
  */
-function openWinningNumbersModal() {
-  const modal = document.getElementById('winningNumbersModal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    // Cập nhật text cho option ngày
-    const filterInput = document.getElementById('filterDate');
-    const scopeSelect = document.getElementById('winningScope');
-    if (filterInput && filterInput.value && scopeSelect) {
-      const [y, m, d] = filterInput.value.split('-');
-      scopeSelect.options[0].text = `📅 Chỉ ngày ${d}/${m}/${y}`;
-    }
-    onWinningNumbersInput();
-    document.getElementById('winningInput')?.focus();
-  }
-}
-window.openWinningNumbersModal = openWinningNumbersModal;
-
-function closeWinningNumbersModal() {
-  const modal = document.getElementById('winningNumbersModal');
-  if (modal) modal.classList.add('hidden');
-}
-window.closeWinningNumbersModal = closeWinningNumbersModal;
-
-function onWinningNumbersInput() {
-  const text = document.getElementById('winningInput')?.value || '';
-  const freq = Calculator.parseWinningNumbers(text);
-  const container = document.getElementById('winningPreviewChips');
-  const countBadge = document.getElementById('winningCountBadge');
-  if (!container) return;
-
-  const entries = Object.entries(freq);
-  if (countBadge) {
-    let totalHits = entries.reduce((sum, [, cnt]) => sum + cnt, 0);
-    countBadge.innerText = `${entries.length} số (${totalHits} nháy)`;
-  }
-
-  if (entries.length === 0) {
-    container.innerHTML = `<span class="text-slate-400 italic text-[11px]">Chưa nhập số trúng...</span>`;
-    return;
-  }
-
-  container.innerHTML = '';
-  entries.forEach(([num, cnt]) => {
-    const chip = document.createElement('span');
-    chip.className = 'inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-950 font-mono font-bold text-xs rounded-lg border border-amber-300';
-    chip.innerHTML = `<span class="text-slate-900">${num}</span><span class="text-[10px] bg-amber-200 text-amber-900 px-1 rounded-sm">${cnt} nháy</span>`;
-    container.appendChild(chip);
-  });
-}
-window.onWinningNumbersInput = onWinningNumbersInput;
-
-async function applyWinningNumbers() {
-  const text = document.getElementById('winningInput')?.value || '';
-  const winningMap = Calculator.parseWinningNumbers(text);
-  if (Object.keys(winningMap).length === 0) {
-    showToast('⚠️ Vui lòng nhập ít nhất 1 số trúng!', 'warning');
-    return;
-  }
-
-  const scope = document.getElementById('winningScope')?.value || 'CURRENT';
-  const region = document.getElementById('winningRegion')?.value || 'ALL';
-  const visible = new Set(getFilteredTickets());
-
-  const filter = (t) => {
-    if (scope === 'CURRENT' && !visible.has(t)) return false;
-    if (region !== 'ALL' && Stations.normMien(region) !== t.mien) return false;
-    return true;
-  };
-
-  const list = AutoChecker.manualSettle(AppState.tickets, winningMap, filter);
-  const r = await commitTrung(list);
-  closeWinningNumbersModal();
-  const wins = list.filter(x => x.trung !== '-').length;
-  showToast(r.sheetError ? `⚠️ Dò ${list.length} vé (${wins} trúng) nhưng chưa ghi được Sheet: ${r.sheetError}` : `🎉 Dò xong ${list.length} vé! Có ${wins} vé trúng.`, r.sheetError ? 'warning' : 'success');
-}
-window.applyWinningNumbers = applyWinningNumbers;
+// Chức năng nhập số trúng tay đã được gỡ bỏ
 
 
 /**
- * 10. SAO CHÉP TIN NHẮN CHO KHÁCH (TUYỆT ĐỐI KHÔNG DÍNH NGUỒN & Q LỜI)
+ * 10. SAO CHÉP TIN NHẮN CHO KHÁCH (TUYỆT ĐỐI KHÔNG DÍNH NGUỒN & LỢI NHUẬN)
  */
 function copyCustomerMessage(idx) {
   const t = AppState.tickets[idx];
@@ -1227,7 +984,7 @@ function setLoadingState(loading, text = '') {
   AppState.isLoading = loading;
   const syncBtn = document.getElementById('btnSyncSheet');
   if (syncBtn) {
-    syncBtn.innerHTML = loading ? `<span class="inline-block animate-spin">⏳</span> ${text}` : `<span id="syncIcon">📥</span> Tải Dữ Liệu Sheet`;
+    syncBtn.innerHTML = loading ? `<span class="inline-block animate-spin">⏳</span> ${text}` : `<span id="syncIcon">🔄</span> Tải Lại Sheet`;
     syncBtn.disabled = loading;
   }
 }
@@ -1253,6 +1010,16 @@ window.renderKatexMath = renderKatexMath;
 
 document.addEventListener('DOMContentLoaded', () => {
   renderKatexMath();
+});
+
+// Đóng các modal khi bấm phím Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeTicketDetailModal();
+    closeAddModal();
+    closeWinningNumbersModal();
+    closeRulesModal();
+  }
 });
 
 window.addEventListener('load', () => {

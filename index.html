@@ -50,19 +50,17 @@
         <div>
           <h1 class="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
             LUCKY QQ99
-            <span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">Tab: CUOC</span>
+            
           </h1>
-          <p class="text-[11px] text-slate-400">
-            Hệ Thống Quản Lý Cược & Đối Soát 3 Bên: <strong>Khách Hàng $\leftrightarrow$ Tôi (Q) $\leftrightarrow$ Chủ Nguồn</strong>
+          <p class="text-[11px] text-emerald-400 font-medium">
+            Tích cực quay tay vận may sẽ tới 🍀
           </p>
         </div>
       </div>
 
       <!-- Header Actions: Tải dữ liệu Sheet, Xem luật -->
       <div class="flex items-center gap-2 text-xs font-semibold no-print">
-        <button type="button" onclick="loadDataFromSheetOrStorage()" id="btnSyncSheet" class="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg border border-emerald-600 transition flex items-center gap-1.5 shadow-sm active:scale-95">
-          <span id="syncIcon">📥</span> Tải Dữ Liệu Sheet
-        </button>
+
 
         <span id="lastSyncBadge" class="hidden sm:inline-block text-[11px] text-slate-400 bg-slate-800 px-2 py-1 rounded-md border border-slate-700 font-mono">
           Chưa đồng bộ
@@ -79,31 +77,18 @@
   <!-- MAIN CONTAINER (VÀO THẲNG DASHBOARD) -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
 
-    <!-- KHỐI 1: TỔNG KẾT HIỆU SUẤT & LÃI RÒNG CỦA Q (BẢO TRÂN QQ) -->
+    <!-- KHỐI 1: TỔNG KẾT HIỆU SUẤT & LÃI RÒNG (BẢO TRÂN QQ) -->
     <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-2xl p-5 sm:p-6 text-white shadow-xl border border-slate-700">
       
-      <!-- Hàng trên: Tiêu đề + Bộ lọc ngày -->
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-700/80">
+      <!-- Hàng trên: Tiêu đề -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-700/80">
         <div>
           <span class="bg-emerald-500/20 text-emerald-400 text-[11px] font-bold px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-wider">
             📊 Bảng Tổng Kết Lợi Nhuận
           </span>
           <h2 class="text-xl sm:text-2xl font-black mt-2 tracking-tight text-white flex items-center gap-2">
-            Doanh Thu & Lợi Nhuận Của Bạn (Q)
+            Doanh Thu & Lợi Nhuận
           </h2>
-        </div>
-
-        <!-- Bộ lọc ngày -->
-        <div class="flex flex-wrap items-center gap-2.5">
-          <label class="text-xs text-slate-400 font-semibold flex items-center gap-1.5 bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700">
-            <span>📅 Ngày:</span>
-            <input type="date" id="filterDate" onchange="renderDashboard()" class="bg-transparent text-white font-bold text-xs focus:outline-none">
-          </label>
-
-          <label class="inline-flex items-center gap-1.5 text-xs text-slate-300 font-medium cursor-pointer bg-slate-800/90 px-3 py-2 rounded-xl border border-slate-700 hover:bg-slate-700 transition">
-            <input type="checkbox" id="chkViewAll" checked onchange="renderDashboard()" class="rounded text-emerald-500 focus:ring-0">
-            <span>Xem tất cả ngày</span>
-          </label>
         </div>
       </div>
 
@@ -112,23 +97,23 @@
         
         <!-- 1. Tiền Xác Khách -->
         <div class="bg-white/5 backdrop-blur rounded-xl p-3.5 border border-white/10">
-          <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">1. Tiền Xác Khách</div>
+          <div class="text-[11px] text-slate-300 font-bold uppercase tracking-wider">1. Tiền Xác Khách</div>
           <div class="text-lg sm:text-xl font-black text-white font-mono-num mt-1" id="statThuKhach">0 đ</div>
-          <div class="text-[10px] text-slate-400 mt-0.5">Tiền xác thu khách hàng</div>
+          <div class="text-[10px] text-slate-300 mt-0.5">Tiền xác thu khách hàng</div>
         </div>
 
         <!-- 2. Tiền Xác Nguồn -->
         <div class="bg-white/5 backdrop-blur rounded-xl p-3.5 border border-white/10" id="cardNguonThu">
-          <div class="text-[11px] text-indigo-300 font-bold uppercase tracking-wider">2. Tiền Xác Nguồn</div>
-          <div class="text-lg sm:text-xl font-black text-indigo-300 font-mono-num mt-1" id="statNguonThu">0 đ</div>
+          <div class="text-[11px] text-indigo-200 font-bold uppercase tracking-wider">2. Tiền Xác Nguồn</div>
+          <div class="text-lg sm:text-xl font-black text-indigo-200 font-mono-num mt-1" id="statNguonThu">0 đ</div>
           <div class="text-[10px] text-indigo-200 mt-0.5">Nộp Nguồn (76% bỏ lẻ nghìn)</div>
         </div>
 
         <!-- 3. Thưởng Trả Khách -->
         <div class="bg-white/5 backdrop-blur rounded-xl p-3.5 border border-white/10">
-          <div class="text-[11px] text-orange-400 font-bold uppercase tracking-wider">3. Thưởng Trả Khách</div>
-          <div class="text-lg sm:text-xl font-black text-orange-400 font-mono-num mt-1" id="statKhachTrung">0 đ</div>
-          <div class="text-[10px] text-slate-400 mt-0.5">Tiền trả khách trúng (x72)</div>
+          <div class="text-[11px] text-orange-300 font-bold uppercase tracking-wider">3. Thưởng Trả Khách</div>
+          <div class="text-lg sm:text-xl font-black text-orange-300 font-mono-num mt-1" id="statKhachTrung">0 đ</div>
+          <div class="text-[10px] text-slate-300 mt-0.5">Tiền trả khách trúng (x72)</div>
         </div>
 
         <!-- 4. Thưởng Nguồn Trả -->
@@ -138,12 +123,12 @@
           <div class="text-[10px] text-amber-200 mt-0.5">Tiền Nguồn trả bạn (x74)</div>
         </div>
 
-        <!-- 5. LỢI NHUẬN CỦA TÔI (Q) -->
+        <!-- 5. LỢI NHUẬN CỦA TÔI -->
         <div class="col-span-2 lg:col-span-1 bg-gradient-to-br from-emerald-600/30 to-emerald-900/60 rounded-xl p-3.5 border-2 border-emerald-500/50 shadow-inner" id="cardQLoi">
           <div class="text-[11px] text-amber-300 font-black uppercase tracking-wider flex items-center gap-1">
-            <span>🏆</span> 5. LỢI NHUẬN Q (LÃI RÒNG)
+            <span>🏆</span> 5. LỢI NHUẬN (LÃI RÒNG)
           </div>
-          <div class="text-2xl font-black text-amber-400 font-mono-num mt-0.5" id="statQLoi">0 đ</div>
+          <div class="text-2xl font-black text-amber-300 font-mono-num mt-0.5" id="statQLoi">0 đ</div>
           <div class="text-[10px] text-emerald-200 font-bold mt-0.5" id="statQLoiDetail">Lãi xác + Thưởng x2</div>
         </div>
 
@@ -154,37 +139,24 @@
     <!-- KHỐI 2: BẢNG DỮ LIỆU ĐỐI SOÁT CHUẨN HÓA (SHEET 'CUOC') -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-4">
       
-      <!-- Hàng Toolbar trên: Tiêu đề + Chế độ xem + Bộ nút hành động -->
-      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-4 border-b border-slate-100">
+      <!-- Hàng Toolbar trên: Tiêu đề + Bộ nút hành động -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
         <div>
           <div class="flex items-center gap-2">
             <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-              <span>📋</span> Bảng Đối Soát Cược (Sheet: CUOC)
+              <span>📋</span> Bảng Đối Soát Cược
             </h3>
-            <span class="text-xs bg-slate-100 text-slate-700 font-bold px-2.5 py-0.5 rounded-lg border border-slate-200" id="recordCountBadge">
+            <span class="text-xs bg-emerald-50 text-emerald-800 font-bold px-2.5 py-0.5 rounded-lg border border-emerald-200" id="recordCountBadge">
               0 dòng
             </span>
           </div>
           <p class="text-xs text-slate-500 mt-1">
-            Bấm vào bất kỳ dòng nào để <strong>bung chi tiết đối soát 3 bên</strong> (Khách $\leftrightarrow$ Tôi $\leftrightarrow$ Nguồn)
+            Bấm vào bất kỳ dòng nào để <strong>mở popup chi tiết đối soát 3 bên</strong> (Khách $\leftrightarrow$ Tôi $\leftrightarrow$ Nguồn)
           </p>
         </div>
 
-        <!-- CHẾ ĐỘ XEM (VIEW MODE) -->
-        <div class="flex flex-wrap items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
-          <button type="button" onclick="setViewMode('standard')" id="btnViewStandard" class="px-3 py-1.5 rounded-lg transition bg-white text-emerald-900 font-bold shadow-xs">
-            🟢 Chuẩn (Khách & Lợi Nhuận)
-          </button>
-          <button type="button" onclick="setViewMode('full')" id="btnViewFull" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">
-            🏢 Đầy Đủ Các Cột
-          </button>
-          <button type="button" onclick="setViewMode('privacy')" id="btnViewPrivacy" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">
-            🛡️ Riêng Tư (Chỉ Khách)
-          </button>
-        </div>
-
         <!-- BỘ NÚT HÀNH ĐỘNG CHÍNH -->
-        <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <!-- NÚT ADD -->
           <button type="button" onclick="openAddModal()" class="flex-1 sm:flex-none py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1.5">
             <span class="text-base leading-none">➕</span> Thêm Mua Số
@@ -195,20 +167,38 @@
             <span>🔎</span> Dò Tự Động
           </button>
 
-          <!-- NÚT NHẬP SỐ TRÚNG THƯỞNG & DÒ VÉ (HỖ TRỢ 19.3, 19x3, 19 19 19...) -->
-          <button type="button" onclick="openWinningNumbersModal()" class="flex-1 sm:flex-none py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition flex items-center justify-center gap-1.5">
-            <span>✍️</span> Nhập Số Trúng Tay
-          </button>
-
           <!-- NÚT TẢI LẠI TỪ SHEET -->
-          <button type="button" onclick="loadDataFromSheetOrStorage()" title="Tải lại toàn bộ dữ liệu mới nhất từ Google Sheet CUOC" class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition flex items-center justify-center gap-1">
-            <span>🔄</span> Tải Lại Sheet
+          <button type="button" id="btnSyncSheet" onclick="loadDataFromSheetOrStorage()" title="Tải lại toàn bộ dữ liệu mới nhất từ Google Sheet CUOC" class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition flex items-center justify-center gap-1">
+            <span id="syncIcon">🔄</span> Tải Lại Sheet
           </button>
+        </div>
+      </div>
 
-          <!-- NÚT BẬT/TẮT MỞ RỘNG TOÀN BỘ -->
-          <button type="button" onclick="toggleAllDetails()" title="Bung hoặc thu gọn tất cả dòng chi tiết" class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition flex items-center justify-center gap-1">
-            <span>↕️</span> Chi Tiết
-          </button>
+      <!-- BỘ LỌC TÌM THEO NGÀY (ĐẦU BẢNG ĐỐI SOÁT) -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <!-- Khoảng ngày Từ - Đến -->
+          <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-slate-300 text-xs shadow-2xs">
+            <span class="text-slate-500 font-semibold">📅 Từ:</span>
+            <input type="date" id="filterDateFrom" onchange="onDateRangeChange()" class="bg-transparent text-slate-800 font-bold text-xs focus:outline-none cursor-pointer">
+            <span class="text-slate-400">—</span>
+            <span class="text-slate-500 font-semibold">Đến:</span>
+            <input type="date" id="filterDateTo" onchange="onDateRangeChange()" class="bg-transparent text-slate-800 font-bold text-xs focus:outline-none cursor-pointer">
+          </div>
+
+          <!-- Các nút chọn nhanh -->
+          <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-300 text-[11px] font-semibold shadow-2xs">
+            <button type="button" onclick="setDateRangeQuick('today')" class="px-2.5 py-1 rounded-md text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition active:scale-95">Hôm nay</button>
+            <button type="button" onclick="setDateRangeQuick('yesterday')" class="px-2.5 py-1 rounded-md text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition active:scale-95">Hôm qua</button>
+            <button type="button" onclick="setDateRangeQuick('7days')" class="px-2.5 py-1 rounded-md text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition active:scale-95">7 ngày</button>
+            <button type="button" onclick="setDateRangeQuick('thisMonth')" class="px-2.5 py-1 rounded-md text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition active:scale-95">Tháng này</button>
+          </div>
+
+          <!-- Checkbox Xem tất cả -->
+          <label class="inline-flex items-center gap-1.5 text-xs text-slate-700 font-semibold cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 shadow-2xs transition">
+            <input type="checkbox" id="chkViewAll" checked onchange="onDateRangeChange()" class="rounded text-emerald-600 focus:ring-0">
+            <span>Xem tất cả ngày</span>
+          </label>
         </div>
       </div>
 
@@ -216,30 +206,11 @@
       <div id="statusBanner" class="hidden text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-xl px-4 py-2.5 space-y-1 leading-relaxed"></div>
       <div id="checkReport" class="hidden text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-4 py-2.5 space-y-1 leading-relaxed"></div>
 
-      <!-- THANH CHUYỂN ĐỔI CHẾ ĐỘ XEM CHÍNH (TICKETS / DAILY / PLAYERS) -->
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-        <div class="flex flex-wrap items-center gap-2 text-xs font-bold">
-          <button type="button" id="tabBtnTickets" onclick="switchMainTab('tickets')" class="px-3.5 py-2 rounded-xl transition bg-emerald-700 text-white shadow-xs flex items-center gap-1.5">
-            <span>📋</span> Danh Sách Cược (<span id="tabCountTickets">0</span>)
-          </button>
-          <button type="button" id="tabBtnDaily" onclick="switchMainTab('daily')" class="px-3.5 py-2 rounded-xl transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5">
-            <span>📊</span> Lời Lãi Theo Ngày (<span id="tabCountDaily">0</span> ngày)
-          </button>
-          <button type="button" id="tabBtnPlayers" onclick="switchMainTab('players')" class="px-3.5 py-2 rounded-xl transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5">
-            <span>👤</span> Theo Khách Hàng (<span id="tabCountPlayers">0</span>)
-          </button>
-        </div>
-
-        <div class="text-[11px] text-slate-500 italic" id="tabViewHint">
-          💡 Bấm vào từng dòng để xem ngăn đối soát 3 bên
-        </div>
-      </div>
-
-      <!-- VIEW 1: BẢNG DỮ LIỆU ĐỐI SOÁT TỪNG VÉ -->
+      <!-- BẢNG DỮ LIỆU ĐỐI SOÁT CƯỢC -->
       <div id="viewTickets" class="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
         <table class="w-full text-left text-xs border-collapse min-w-[950px]">
           <thead id="tableHeader">
-            <!-- Header được render động theo Chế độ xem qua app.js -->
+            <!-- Header được render qua app.js theo định dạng riêng tư khách -->
           </thead>
           <tbody id="tableBody" class="divide-y divide-slate-100 text-slate-800">
             <!-- Dữ liệu được inject tự động qua app.js -->
@@ -247,49 +218,29 @@
         </table>
       </div>
 
-      <!-- VIEW 2: BẢNG TỔNG KẾT LỜI LÃI THEO TỪNG NGÀY -->
-      <div id="viewDaily" class="hidden overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
-        <table class="w-full text-left text-xs border-collapse min-w-[950px]">
-          <thead class="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
-            <tr>
-              <th class="py-3 px-3">Ngày Xổ</th>
-              <th class="py-3 px-3">Thứ</th>
-              <th class="py-3 px-2 text-center">Số Vé</th>
-              <th class="py-3 px-3 text-right bg-emerald-900/60 text-emerald-200">Xác Khách</th>
-              <th class="py-3 px-3 text-right bg-indigo-900/60 text-indigo-200">Xác Nguồn</th>
-              <th class="py-3 px-3 text-right text-emerald-300">Lãi Xác</th>
-              <th class="py-3 px-3 text-right bg-orange-950/60 text-orange-200">Thưởng Trả Khách</th>
-              <th class="py-3 px-3 text-right bg-amber-950/60 text-amber-200">Thưởng Nguồn</th>
-              <th class="py-3 px-3 text-right text-amber-300">Lãi Thưởng x2</th>
-              <th class="py-3 px-3 text-right">Khách Lời / Lỗ</th>
-              <th class="py-3 px-3 text-right bg-emerald-800 text-amber-300 font-black">LỢI NHUẬN Q</th>
-              <th class="py-3 px-2 text-center">Xem Vé</th>
-            </tr>
-          </thead>
-          <tbody id="dailyTableBody" class="divide-y divide-slate-100 text-slate-800 font-mono-num">
-            <!-- Inject tự động qua app.js -->
-          </tbody>
-        </table>
-      </div>
+      <!-- PHÂN TRANG (PAGINATION) DƯỚI CHÂN BẢNG -->
+      <div id="tablePagination" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs text-slate-600">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5">
+            <span class="font-medium text-slate-500">Hiển thị:</span>
+            <select id="pageSizeSelect" onchange="changePageSize(this.value)" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="10">10 dòng / trang</option>
+              <option value="30" selected>30 dòng / trang</option>
+              <option value="50">50 dòng / trang</option>
+              <option value="all">Tất cả dòng</option>
+            </select>
+          </div>
+          <span class="text-slate-300">|</span>
+          <span id="paginationInfo" class="font-semibold text-slate-700">0 dòng cược</span>
+        </div>
 
-      <!-- VIEW 3: BẢNG ĐỐI SOÁT THEO KHÁCH HÀNG -->
-      <div id="viewPlayers" class="hidden overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
-        <table class="w-full text-left text-xs border-collapse min-w-[850px]">
-          <thead class="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
-            <tr>
-              <th class="py-3 px-4">Tên Khách Hàng</th>
-              <th class="py-3 px-2 text-center">Tổng Số Vé</th>
-              <th class="py-3 px-3 text-right bg-emerald-900/60 text-emerald-200">Tổng Tiền Xác Thu</th>
-              <th class="py-3 px-3 text-right bg-orange-950/60 text-orange-200">Tổng Thưởng Đã Trả (x72)</th>
-              <th class="py-3 px-3 text-right">Khách Lời / Lỗ</th>
-              <th class="py-3 px-3 text-right bg-emerald-800 text-amber-300 font-black">LỢI NHUẬN Q MANG LẠI</th>
-              <th class="py-3 px-2 text-center">Thao Tác</th>
-            </tr>
-          </thead>
-          <tbody id="playersTableBody" class="divide-y divide-slate-100 text-slate-800 font-mono-num">
-            <!-- Inject tự động qua app.js -->
-          </tbody>
-        </table>
+        <div class="flex items-center gap-1.5" id="paginationControls">
+          <button type="button" id="btnPageFirst" onclick="goToPage(1)" title="Trang đầu" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition">«</button>
+          <button type="button" id="btnPagePrev" onclick="prevPage()" title="Trang trước" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition">‹</button>
+          <span id="pageCurrentIndicator" class="px-3 py-1 font-bold text-slate-800 bg-slate-100 rounded-lg border border-slate-200 text-xs">Trang 1 / 1</span>
+          <button type="button" id="btnPageNext" onclick="nextPage()" title="Trang sau" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition">›</button>
+          <button type="button" id="btnPageLast" onclick="goToPage('last')" title="Trang cuối" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition">»</button>
+        </div>
       </div>
 
       <div id="emptyNotice" class="text-center py-12 text-slate-400 text-sm hidden">
@@ -299,6 +250,194 @@
     </div>
 
   </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL CHI TIẾT CƯỢC & ĐỐI SOÁT 3 BÊN (GIAO DIỆN TINH GỌN TRỰC QUAN) -->
+  <!-- ========================================================================= -->
+  <div id="ticketDetailModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 modal-backdrop hidden" onclick="if(event.target === this) closeTicketDetailModal()">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full overflow-hidden modal-content flex flex-col max-h-[92vh]">
+      
+      <!-- Modal Header -->
+      <div class="bg-slate-900 px-5 py-4 text-white flex justify-between items-center border-b border-slate-800">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📋</span>
+            <h3 class="font-bold text-base text-white">Chi Tiết Cược & Đối Soát 3 Bên</h3>
+          </div>
+          <p class="text-xs text-slate-300 mt-0.5" id="detailModalSubtitle">
+            Đang tải dữ liệu vé...
+          </p>
+        </div>
+        <button type="button" onclick="closeTicketDetailModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm transition">
+          ✕
+        </button>
+      </div>
+
+      <!-- Quick Summary Banner -->
+      <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+        <div class="flex flex-wrap items-center gap-2 font-mono">
+          <span class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-900 font-bold" id="detailQuickPlayer">Khách</span>
+          <span class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-800 font-medium" id="detailQuickMien">Miền</span>
+          <span class="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 font-bold" id="detailQuickLoai">Loại cược</span>
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-950 font-bold" id="detailQuickSo">Số đánh</span>
+          <span class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold" id="detailQuickDiem">Điểm</span>
+        </div>
+        <div id="detailQuickStatus" class="font-bold text-xs">
+          <!-- Trạng thái trúng / chờ dò -->
+        </div>
+      </div>
+
+      <!-- Modal Body (Hiển thị song song KHÁCH - NGUỒN - LỜI Q không cần chuyển Tab) -->
+      <div class="p-5 overflow-y-auto flex-1 space-y-4 text-xs">
+        
+        <!-- KHỐI 2 CỘT SONG SONG: VỚI KHÁCH HÀNG & VỚI CHỦ NGUỒN -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- CỘT 1: VỚI KHÁCH HÀNG -->
+          <div class="bg-white border-2 border-emerald-200 rounded-2xl p-4.5 flex flex-col justify-between shadow-xs space-y-4" id="boxDetailKhach">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                <span class="font-black text-emerald-800 text-sm flex items-center gap-1.5 uppercase tracking-wide">
+                  <span>👤</span> 1. Với Khách Hàng
+                </span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-200" id="detailKhachStatusBadge">
+                  Thu / Chung Khách
+                </span>
+              </div>
+
+              <!-- Dòng Thu Khách & Chung Khách -->
+              <div class="grid grid-cols-2 gap-2.5">
+                <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 space-y-1">
+                  <div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Tiền Xác Thu Khách</div>
+                  <div class="text-xl font-black font-mono-num text-emerald-900" id="detailKhachThu">0 đ</div>
+                  <div class="text-[10px] text-emerald-700 leading-tight" id="detailKhachThuFormula">Đang tính...</div>
+                </div>
+
+                <div class="bg-orange-50/70 border border-orange-200 rounded-xl p-3 space-y-1">
+                  <div class="text-[11px] font-bold text-orange-800 uppercase tracking-wider">Thưởng Chung Khách (x72)</div>
+                  <div class="text-xl font-black font-mono-num text-orange-900" id="detailKhachTrung">0 đ</div>
+                  <div class="text-[10px] text-orange-700 leading-tight" id="detailKhachTrungFormula">Tỷ lệ trả thưởng chuẩn</div>
+                </div>
+              </div>
+
+              <!-- Tổng kết Khách -->
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+                <div>
+                  <span class="text-xs text-slate-700 font-bold">Khách Lời / Lỗ:</span>
+                  <div class="text-[10px] text-slate-500">Thưởng trừ tiền xác</div>
+                </div>
+                <div class="text-base font-black font-mono-num" id="detailKhachLoi">
+                  0 đ
+                </div>
+              </div>
+            </div>
+
+            <!-- Nút sao chép tin nhắn gửi khách -->
+            <button type="button" onclick="copyDetailCustomer()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-2 text-xs">
+              <span>📋</span> Sao Chép Tin Nhắn Gửi Khách (Bảo Mật)
+            </button>
+          </div>
+
+          <!-- CỘT 2: VỚI CHỦ NGUỒN -->
+          <div class="bg-white border-2 border-indigo-200 rounded-2xl p-4.5 flex flex-col justify-between shadow-xs space-y-4" id="boxDetailNguon">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                <span class="font-black text-indigo-900 text-sm flex items-center gap-1.5 uppercase tracking-wide">
+                  <span>🏢</span> 2. Với Chủ Nguồn
+                </span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-indigo-100 text-indigo-900 border border-indigo-200">
+                  Nội Bộ (Nộp / Nhận)
+                </span>
+              </div>
+
+              <!-- Dòng Nộp Nguồn & Nguồn Trả -->
+              <div class="grid grid-cols-2 gap-2.5">
+                <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3 space-y-1">
+                  <div class="text-[11px] font-bold text-indigo-800 uppercase tracking-wider">Tiền Xác Nộp Nguồn</div>
+                  <div class="text-xl font-black font-mono-num text-indigo-900" id="detailNguonThu">0 đ</div>
+                  <div class="text-[10px] text-indigo-700 leading-tight" id="detailNguonThuFormula">76% làm tròn bỏ lẻ nghìn</div>
+                </div>
+
+                <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 space-y-1">
+                  <div class="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Thưởng Nguồn Trả (x74)</div>
+                  <div class="text-xl font-black font-mono-num text-amber-900" id="detailQTrung">0 đ</div>
+                  <div class="text-[10px] text-amber-700 leading-tight" id="detailQTrungFormula">Nguồn trả ăn x74</div>
+                </div>
+              </div>
+
+              <!-- Cân đối Nguồn -->
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+                <div>
+                  <span class="text-xs text-slate-700 font-bold">Cân Đối Với Nguồn:</span>
+                  <div class="text-[10px] text-slate-500">Nguồn thu xác & chung trả</div>
+                </div>
+                <div class="text-xs font-bold text-slate-800 text-right font-mono-num" id="detailNguonBalance">
+                  Đã khớp phơi nộp
+                </div>
+              </div>
+            </div>
+
+            <!-- Nút sao chép phơi nguồn -->
+            <button type="button" onclick="copyDetailSource()" class="w-full py-2.5 px-4 bg-indigo-700 hover:bg-indigo-600 active:scale-95 text-white font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-2 text-xs">
+              <span>📤</span> Sao Chép Phơi Nộp Nguồn
+            </button>
+          </div>
+
+        </div>
+
+        <!-- KHỐI 3: LỢI NHUẬN CỦA TÔI - TOÀN CHIỀU RỘNG, BÓC TÁCH MINH BẠCH -->
+        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-4 sm:p-5 border border-emerald-500/40 shadow-md space-y-3" id="boxDetailQLoi">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-700">
+            <span class="font-black text-amber-300 text-xs sm:text-sm flex items-center gap-1.5 uppercase tracking-wide">
+              <span>🏆</span> 3. Lợi Nhuận Ròng Của Tôi (Lãi Bỏ Túi)
+            </span>
+            <span class="font-bold text-emerald-300 bg-emerald-900/60 px-2.5 py-0.5 rounded-lg text-xs">Lãi Ròng Vé Này</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            <!-- 1. Lãi xác -->
+            <div class="bg-white/5 border border-white/10 rounded-xl p-3">
+              <div class="text-[11px] font-bold text-slate-300 uppercase">1. Lãi Tiền Xác (Thu - Nộp)</div>
+              <div class="text-lg font-black font-mono-num text-emerald-300 mt-0.5" id="detailLaiXac">+0 đ</div>
+              <div class="text-[10px] text-slate-300 mt-0.5" id="detailLaiXacSub">Thu khách trừ Nộp nguồn</div>
+            </div>
+
+            <!-- 2. Lãi thưởng -->
+            <div class="bg-white/5 border border-white/10 rounded-xl p-3">
+              <div class="text-[11px] font-bold text-slate-300 uppercase">2. Lãi Thưởng (+2k/1k điểm)</div>
+              <div class="text-lg font-black font-mono-num text-amber-300 mt-0.5" id="detailLaiThuong">+0 đ</div>
+              <div class="text-[10px] text-slate-300 mt-0.5" id="detailLaiThuongSub">Chênh lệch x74 - x72</div>
+            </div>
+
+            <!-- 3. Tổng lãi ròng -->
+            <div class="bg-emerald-500/20 border-2 border-emerald-400/50 rounded-xl p-3 flex flex-col justify-center">
+              <div class="text-[11px] font-black text-amber-300 uppercase tracking-wider">TỔNG LÃI BỎ TÚI</div>
+              <div class="text-2xl font-black font-mono-num text-amber-300 mt-0.5" id="detailQLoiTotal">+0 đ</div>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-emerald-200/90 pt-1.5 border-t border-slate-700/60 leading-relaxed">
+            💡 Công thức chuẩn: $\text{Lợi Nhuận} = (\text{Xác Khách} - \text{Xác Nguồn}) + (\text{Nguồn Trả} - \text{Khách Trả})$.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between">
+        <div class="text-[11px] text-slate-500 italic">
+          💡 Bấm Esc hoặc bấm ra ngoài nền để đóng nhanh
+        </div>
+        <button type="button" onclick="closeTicketDetailModal()" class="py-2 px-5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-xl transition">
+          Đóng
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+    </div>
+  </div>
 
   <!-- ========================================================================= -->
   <!-- MODAL FORM THÊM MUA SỐ (ADD) - CỰC KỲ TINH GỌN, KHÔNG RƯỜM RÀ -->
@@ -428,82 +567,6 @@
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- MODAL NHẬP SỐ TRÚNG THƯỞNG & DÒ VÉ (HỖ TRỢ 19.3, 19x3, 19 19 19...) -->
-  <!-- ========================================================================= -->
-  <div id="winningNumbersModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 modal-backdrop hidden">
-    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden modal-content">
-      <div class="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 p-4 text-white flex justify-between items-center">
-        <div>
-          <h3 class="font-bold text-sm sm:text-base flex items-center gap-2">
-            <span>✍️</span> Nhập Số Trúng Tay
-          </h3>
-          <p class="text-[11px] text-amber-100 mt-0.5">Hỗ trợ trùng nhiều nháy: 19.3, 19x3, 19 19 19 hoặc dán cả bảng kết quả</p>
-        </div>
-        <button type="button" onclick="closeWinningNumbersModal()" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white font-bold transition">
-          ✕
-        </button>
-      </div>
-
-      <div class="p-5 space-y-4 text-xs">
-        <!-- Hàng 1: Phạm vi ngày & Miền -->
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Phạm Vi Áp Dụng
-            </label>
-            <select id="winningScope" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none">
-              <option value="CURRENT">📅 Chỉ ngày đang chọn</option>
-              <option value="ALL">🌐 Tất cả các ngày</option>
-            </select>
-          </div>
-          <div>
-            <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Miền Áp Dụng
-            </label>
-            <select id="winningRegion" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none">
-              <option value="ALL">Tất cả các miền</option>
-              <option value="Nam">🌴 Miền Nam (MN)</option>
-              <option value="Bắc">🏮 Miền Bắc (MB)</option>
-              <option value="Trung">🏖️ Miền Trung (MT)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Hàng 2: Hộp nhập số trúng -->
-        <div>
-          <div class="flex justify-between items-center mb-1">
-            <label class="font-bold text-slate-700 uppercase tracking-wider">
-              Danh Sách Số Trúng
-            </label>
-            <span class="text-[11px] text-slate-400 font-normal">Cú pháp: 19.3 hoặc 19x3 hoặc 19 19 19</span>
-          </div>
-          <textarea id="winningInput" rows="4" oninput="onWinningNumbersInput()" placeholder="Nhập số trúng thưởng...&#10;Ví dụ: 19.3 52 08x2 44:1 77 77&#10;Hoặc dán thẳng bảng kết quả Minh Chính (hệ thống tự lấy 2 số đuôi của toàn bộ lô)" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none"></textarea>
-        </div>
-
-        <!-- Hàng 3: Live Preview các số trúng nhận diện được -->
-        <div>
-          <div class="flex justify-between items-center mb-1.5">
-            <span class="font-bold text-slate-600 uppercase tracking-wider text-[11px]">Số trúng nhận diện được:</span>
-            <span id="winningCountBadge" class="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">0 số</span>
-          </div>
-          <div id="winningPreviewChips" class="min-h-[38px] p-2 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
-            <span class="text-slate-400 italic text-[11px]">Chưa nhập số trúng...</span>
-          </div>
-        </div>
-
-        <!-- Nút thực hiện -->
-        <div class="flex gap-2 pt-2">
-          <button type="button" onclick="applyWinningNumbers()" class="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 active:scale-95 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
-            <span>🚀</span> Dò Ngay & Cập Nhật Doanh Thu
-          </button>
-          <button type="button" onclick="closeWinningNumbersModal()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition">
-            Đóng
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- ========================================================================= -->
   <!-- MODAL LUẬT CHƠI & BẢNG GIÁ 2 TẦNG (RENDER KATEX TOÁN HỌC) -->
@@ -627,11 +690,11 @@
             $$\text{Tiền Xác Nguồn} = \left\lfloor \frac{\text{Điểm (VNĐ)} \times \text{Số Lô} \times 76 \times \text{Số Đài} \times \text{Số Con}}{100 \times 1000} \right\rfloor \times 1000$$
           </div>
           <div class="text-center overflow-x-auto">
-            $$\text{Lợi Nhuận của Tôi (Q)} = (\text{Tiền Thu Khách} - \text{Tiền Nộp Nguồn}) + (\text{Thưởng Nguồn Trả} - \text{Thưởng Trả Khách})$$
+            $$\text{Lợi Nhuận Của Tôi} = (\text{Tiền Thu Khách} - \text{Tiền Nộp Nguồn}) + (\text{Thưởng Nguồn Trả} - \text{Thưởng Trả Khách})$$
           </div>
           <p class="text-slate-600 leading-relaxed text-[11px]">
             • <strong>Quy tắc làm tròn Nguồn</strong>: Nhân tỷ lệ $76\%$, sau đó lấy phần nghìn nguyên và bỏ số lẻ nghìn.<br>
-            • <strong>Bảo mật 100%</strong>: Giao diện và tin nhắn gửi Khách tuyệt đối không tiết lộ giá vốn Nguồn hoặc Lợi nhuận Q.<br>
+            • <strong>Bảo mật 100%</strong>: Giao diện và tin nhắn gửi Khách tuyệt đối không tiết lộ giá vốn Nguồn hoặc Lợi nhuận của Tôi.<br>
             • <strong>Cược Đá / Xiên</strong>: Hệ thống đã sẵn sàng cấu trúc mở rộng, sẽ kích hoạt khi hoàn tất đối soát tỷ lệ với Chủ Nguồn.
           </p>
         </div>
