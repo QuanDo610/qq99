@@ -82,9 +82,12 @@ const Results = {
         ...(prizes['G7'] || []).map(t => t.slice(-2)),
         ...(prizes['DB'] || []).map(t => t.slice(-2))
       ];
-      const xiuChuDau = (prizes['G6'] || []).slice(0, 1).map(t => t.slice(-3));
+      const xiuChuDau = (prizes['G6'] || []).map(t => t.slice(-3));
       const xiuChuDuoi = (prizes['DB'] || []).map(t => t.slice(-3));
-      const xiuChuDauDuoi = (prizes['DB'] || []).map(t => t.slice(-3));
+      const xiuChuDauDuoi = [
+        ...(prizes['G6'] || []).map(t => t.slice(-3)),
+        ...(prizes['DB'] || []).map(t => t.slice(-3))
+      ];
 
       stations = [{
         name: 'Miền Bắc',

@@ -22,15 +22,15 @@ const Calculator = {
       name: 'Bao Lô 3 số',
       digitLength: 3,
       prizes: { Nam: 17, Trung: 17, 'Bắc': 23 },
-      rateKhach: { Nam: 17000, Trung: 17000, 'Bắc': 23000 },
-      multiplierKhach: 600,
+      rateKhach: { Nam: 14000, Trung: 14000, 'Bắc': 21000 },
+      multiplierKhach: 620,
       multiplierNguon: 650
     },
     'Bao Lô 4 số': {
       name: 'Bao Lô 4 số',
       digitLength: 4,
       prizes: { Nam: 16, Trung: 16, 'Bắc': 20 },
-      rateKhach: { Nam: 16000, Trung: 16000, 'Bắc': 20000 },
+      rateKhach: { Nam: 14000, Trung: 14000, 'Bắc': 21000 },
       multiplierKhach: 5000,
       multiplierNguon: 5500
     },
@@ -38,15 +38,15 @@ const Calculator = {
       name: 'Đầu Đuôi',
       digitLength: 2,
       prizes: { Nam: 2, Trung: 2, 'Bắc': 5 },
-      rateKhach: { Nam: 2000, Trung: 2000, 'Bắc': 5000 },
+      rateKhach: { Nam: 1600, Trung: 1600, 'Bắc': 4000 },
       multiplierKhach: 72,
       multiplierNguon: 74
     },
     'Xỉu Chủ Đầu': {
       name: 'Xỉu Chủ Đầu',
       digitLength: 3,
-      prizes: { Nam: 1, Trung: 1, 'Bắc': 1 },
-      rateKhach: { Nam: 1000, Trung: 1000, 'Bắc': 1000 },
+      prizes: { Nam: 1, Trung: 1, 'Bắc': 3 },
+      rateKhach: { Nam: 1000, Trung: 1000, 'Bắc': 2400 },
       multiplierKhach: 620,
       multiplierNguon: 650
     },
@@ -61,8 +61,8 @@ const Calculator = {
     'Xỉu Chủ Đầu Đuôi': {
       name: 'Xỉu Chủ Đầu Đuôi',
       digitLength: 3,
-      prizes: { Nam: 2, Trung: 2, 'Bắc': 2 },
-      rateKhach: { Nam: 2000, Trung: 2000, 'Bắc': 2000 },
+      prizes: { Nam: 2, Trung: 2, 'Bắc': 4 },
+      rateKhach: { Nam: 2000, Trung: 2000, 'Bắc': 3200 },
       multiplierKhach: 620,
       multiplierNguon: 650
     }

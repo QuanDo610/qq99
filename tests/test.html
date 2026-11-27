@@ -54,12 +54,26 @@ function eq(name, got, want) {
     eq('MB nháy từ Trúng', e2.trungNLo, 3);
     eq('MB qLoi', e2.qLoi, (420000 - 410000) + 3 * 5000 * 2);
 
-    // Cược mới: Bao Lô 3 số & Đầu Đuôi
+    // Cược mới: Bao Lô 3 số, 4 số, Đầu Đuôi, Xỉu Chủ
     const e3 = Calculator.enrichTicket({ date: '14/11/2026', player: 'B', mien: 'Nam', dai: 'TPHCM', loaiCuoc: 'Bao Lô 3 số', so: '918 454', tien: 1000, trung: '918' });
-    eq('MN 3 càng 1k 1đài 2con thuKhach', e3.thuKhach, 34000);
+    eq('MN 3 càng 1k 1đài 2con thuKhach', e3.thuKhach, 28000);
     eq('MN 3 càng 1k 1đài 2con nguonThu', e3.nguonThu, Math.floor((1000 * 17 * 76 * 1 * 2) / 100 / 1000) * 1000);
     eq('MN 3 càng trúng 1 con', e3.trungNLo, 1);
-    eq('MN 3 càng khachTrung', e3.khachTrung, 600000);
+    eq('MN 3 càng khachTrung', e3.khachTrung, 620000);
+
+    const e4 = Calculator.enrichTicket({ date: '14/11/2026', player: 'C', mien: 'Nam', dai: 'TPHCM', loaiCuoc: 'Bao Lô 4 số', so: '4426', tien: 1000, trung: '4426' });
+    eq('MN 4 càng 1k 1đài 1con thuKhach', e4.thuKhach, 14000);
+    eq('MN 4 càng khachTrung', e4.khachTrung, 5000000);
+
+    const e5 = Calculator.enrichTicket({ date: '14/11/2026', player: 'D', mien: 'Nam', dai: 'TPHCM', loaiCuoc: 'Đầu Đuôi', so: '96', tien: 10000, trung: '96' });
+    eq('MN Đầu Đuôi 10k thuKhach', e5.thuKhach, 16000);
+    eq('MN Đầu Đuôi 10k khachTrung', e5.khachTrung, 720000);
+
+    const e6 = Calculator.enrichTicket({ date: '14/11/2026', player: 'E', mien: 'Bắc', dai: 'Miền Bắc', loaiCuoc: 'Đầu Đuôi', so: '96', tien: 10000, trung: '96' });
+    eq('MB Đầu Đuôi 10k thuKhach', e6.thuKhach, 40000);
+
+    const e7 = Calculator.enrichTicket({ date: '14/11/2026', player: 'F', mien: 'Bắc', dai: 'Miền Bắc', loaiCuoc: 'Xỉu Chủ Đầu Đuôi', so: '918', tien: 10000, trung: '918' });
+    eq('MB Xỉu Chủ 10k thuKhach', e7.thuKhach, 32000);
 
     // --- Parser trên kết quả thật 14/11/2026 ---
     const kq = {};

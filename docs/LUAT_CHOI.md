@@ -56,27 +56,29 @@ Hệ thống hoạt động theo mô hình trung gian ăn chênh lệch 2 đầu
 
 ---
 
-## 3. BẢNG SO SÁNH TỔNG HỢP: KHÁCH - TÔI - NGUỒN
+## 3. BẢNG SO SÁNH TỔNG HỢP: KHÁCH - TÔI - NGUỒN (2 CON, 3 CON, 4 CON, ĐẦU ĐUÔI, XỈU CHỦ)
 
-### 3.1. Miền Nam & Miền Trung (MN & MT - 18 lô/đài)
+> **Quy định xác 2, 3, 4 số**: Đồng nhất **14k xác** cho MN/MT và **21k xác** cho MB trên mỗi 1k điểm cược!
+
+### 3.1. Miền Nam & Miền Trung (MN & MT)
 
 | Khoản mục | KHÁCH HÀNG (Giá Tôi thu/trả) | NGUỒN (Giá Tôi nộp/nhận) | LỢI NHUẬN CỦA TÔI |
 | :--- | :--- | :--- | :--- |
-| **Xác Bao Lô 2 số (1k/đài)** | **14k** | **13k** (gốc 13.680đ) | **Lời 1k xác** |
-| **Xác Bao Lô 2 số (5k/3 đài)** | **210k** | **205k** (gốc 205.200đ) | **Lời 5k xác** |
-| **Trúng Bao Lô 2 số** | **x72** ($1\text{k} \rightarrow 72\text{k}$) | **x74** ($1\text{k} \rightarrow 74\text{k}$) | **Ăn chênh lệch x2** ($+2\text{k}$/nháy) |
-| **Đầu Đuôi (G8 & ĐB)** | Đánh 10k = 16k xác | Đánh 10k = ~15k xác | Ăn hoa hồng xác + thưởng |
-| **Xỉu Chủ (G7 & ĐB)** | Trúng x620 | Trúng x650 | Ăn hoa hồng xác + thưởng |
+| **Bao Lô 2 số (1k/đài - 18 lô)** | **14k xác** \| Trúng **x72** (72k) | **13k xác** (13.68k) \| Trúng **x74** (74k) | **+1k xác** + **2k thưởng/nháy** |
+| **Bao Lô 3 số (1k/đài - 17 lô)** | **14k xác** \| Trúng **x620** (620k) | **12k xác** (12.92k) \| Trúng **x650** (650k) | **+2k xác** + **30k thưởng/nháy** |
+| **Bao Lô 4 số (1k/đài - 16 lô)** | **14k xác** \| Trúng **x5.000** (5.000k) | **12k xác** (12.16k) \| Trúng **x5.500** (5.500k) | **+2k xác** + **500k thưởng/nháy** |
+| **Đầu Đuôi (2 số - 2 lô: G8 + ĐB)** | Đánh 10k = **16k xác** (1.6k/1k) \| Trúng **x72** (720k) | Đánh 10k = **15k xác** (15.2k) \| Trúng **x74** (740k) | **+1k xác/10k** + **2k thưởng/1k** |
+| **Xỉu Chủ (3 số - G7 & ĐB)** | Đánh 1k = **2k xác** \| Trúng **x620** (620k) | Đánh 1k = **1.52k xác** \| Trúng **x650** (650k) | **Lãi xác** + **30k thưởng/nháy** |
 
 ### 3.2. Miền Bắc (MB - 27 lô - 1 đài)
 
 | Khoản mục | KHÁCH HÀNG (Giá Tôi thu/trả) | NGUỒN (Giá Tôi nộp/nhận) | LỢI NHUẬN CỦA TÔI |
 | :--- | :--- | :--- | :--- |
-| **Xác Bao Lô MB (1k)** | **21k** | **20k** (gốc 20.520đ) | **Lời 1k xác** |
-| **Xác Bao Lô MB (5k)** | **105k** | **102k** (gốc 102.600đ) | **Lời 3k xác** |
-| **Trúng Bao Lô 2 số MB** | **x72** ($1\text{k} \rightarrow 72\text{k}$) | **x74** ($1\text{k} \rightarrow 74\text{k}$) | **Ăn chênh lệch x2** ($+2\text{k}$/nháy) |
-| **Đầu Đuôi MB (4 số G7 + ĐB)** | Đánh 1k = 4k xác | Nộp theo tỷ lệ nguồn | Ăn hoa hồng xác + thưởng |
-| **Xỉu Chủ MB (3 số G6 + ĐB)** | Đánh 10k = 32k xác | Nộp theo tỷ lệ nguồn | Ăn hoa hồng xác + thưởng |
+| **Bao Lô 2 số (1k - 27 lô)** | **21k xác** \| Trúng **x72** (72k) | **20k xác** (20.52k) \| Trúng **x74** (74k) | **+1k xác** + **2k thưởng/nháy** |
+| **Bao Lô 3 số (1k - 23 lô)** | **21k xác** \| Trúng **x620** (620k) | **17k xác** (17.48k) \| Trúng **x650** (650k) | **+3k xác** (làm tròn) + **30k thưởng/nháy** |
+| **Bao Lô 4 số (1k - 20 lô)** | **21k xác** \| Trúng **x5.000** (5.000k) | **15k xác** (15.20k) \| Trúng **x5.500** (5.500k) | **+5k xác** (làm tròn) + **500k thưởng/nháy** |
+| **Đầu Đuôi MB (4 số G7 + ĐB - 5 lô)** | Đánh 10k = **40k xác** (4k/1k) \| Trúng **x72** | Đánh 10k = **38k xác** (38k) \| Trúng **x74** | **+2k xác/10k** + **2k thưởng/1k** |
+| **Xỉu Chủ MB (3 số G6 + ĐB - 4 lô)** | Đánh 10k = **32k xác** (Hệ số 3.2) \| Trúng **x620** | Đánh 10k = **30k xác** (30.4k) \| Trúng **x650** | **+2k xác/10k** + **30k thưởng/1k** |
 
 ---
 

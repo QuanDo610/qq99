@@ -50,24 +50,23 @@ Khi người dùng nhập số trúng, hệ thống hỗ trợ linh hoạt các 
 ---
 
 ## 4. QUY TẮC CỐT LÕI (KHÁCH vs NGUỒN)
+> **Quy định xác 2, 3, 4 số**: Đồng nhất **14k xác** cho MN/MT và **21k xác** cho MB trên mỗi 1k điểm cược!
 
-### A. Miền Nam & Miền Trung (MN & MT - 18 lô/đài)
-* **Bao Lô 2 số**:
-  * **Thu Khách**: Xác $1\text{k} = 14\text{k}$/đài. Khách trúng ăn **$\times 72$** ($1\text{k} \rightarrow 72\text{k}$).
-  * **Nộp Nguồn**: $\text{Xác} = \lfloor (\text{Điểm} \times 18 \times 76 \times \text{Số đài} \times \text{Số con}) / 100 / 1000 \rfloor \times 1000$.
-    * $1\text{k}$ (1 đài) $\rightarrow \mathbf{13\text{k}}$ xác.
-    * $1\text{k}$ (3 đài) $\rightarrow \mathbf{41\text{k}}$ xác.
-    * $5\text{k}$ (3 đài - 4 con) $\rightarrow \mathbf{820\text{k}}$ xác.
-  * **Nguồn trả thưởng**: Ăn **$\times 74$** ($1\text{k} \rightarrow 74\text{k}$).
-  * **Lợi nhuận của Tôi**:
-    * Tiền xác: Hưởng chênh lệch $\text{Xác Khách} - \text{Xác Nguồn}$.
-    * Tiền trúng: Hưởng chênh lệch $74 - 72 = \mathbf{+2\text{k}}$ trên mỗi 1k điểm trúng.
+### A. Miền Nam & Miền Trung (MN & MT)
+* **Bao Lô 2, 3, 4 số**:
+  * **Thu Khách**: Điểm $\times 14\text{k} \times \text{Số đài} \times \text{Số con}$.
+  * **Nộp Nguồn (76%)**: $\text{Xác} = \lfloor (\text{Điểm} \times \text{Số lô} \times 76 \times \text{Số đài} \times \text{Số con}) / 100 / 1000 \rfloor \times 1000$. (2 số = 18 lô; 3 số = 17 lô; 4 số = 16 lô).
+  * **Trả thưởng Khách**: 2 số ăn $\times 72$; 3 số ăn $\times 620$; 4 số ăn $\times 5.000$.
+  * **Nguồn trả Q**: 2 số ăn $\times 74$; 3 số ăn $\times 650$; 4 số ăn $\times 5.500$.
+* **Đầu Đuôi & Xỉu Chủ**:
+  * **Đầu Đuôi (G8 + ĐB)**: 10k cược $\rightarrow$ 16k xác. Ăn $\times 72$.
+  * **Xỉu Chủ (G7 & ĐB)**: 1k cược $\rightarrow$ 2k xác. Ăn $\times 620$ (Nguồn $\times 650$).
 
 ### B. Miền Bắc (MB - 27 lô - 1 đài)
-* **Bao Lô 2 số MB**:
-  * **Thu Khách**: Xác $1\text{k} = 21\text{k}$. Khách trúng ăn **$\times 72$**.
-  * **Nộp Nguồn**: $\text{Xác} = \lfloor (\text{Điểm} \times 27 \times 76 \times \text{Số con}) / 100 / 1000 \rfloor \times 1000$.
-    * $1\text{k} \rightarrow \mathbf{20\text{k}}$ xác.
-    * $5\text{k} \rightarrow \mathbf{102\text{k}}$ xác.
-  * **Nguồn trả thưởng**: Ăn **$\times 74$**.
-  * **Lợi nhuận của Tôi**: Chênh lệch xác + Chênh lệch trúng $\times 2$.
+* **Bao Lô 2, 3, 4 số MB**:
+  * **Thu Khách**: Điểm $\times 21\text{k} \times \text{Số con}$.
+  * **Nộp Nguồn (76%)**: $\text{Xác} = \lfloor (\text{Điểm} \times \text{Số lô} \times 76 \times \text{Số con}) / 100 / 1000 \rfloor \times 1000$. (2 số = 27 lô; 3 số = 23 lô; 4 số = 20 lô).
+  * **Trả thưởng**: 2 số ăn $\times 72$ (Nguồn $\times 74$); 3 số ăn $\times 620$ (Nguồn $\times 650$); 4 số ăn $\times 5.000$ (Nguồn $\times 5.500$).
+* **Đầu Đuôi & Xỉu Chủ MB**:
+  * **Đầu Đuôi MB (4 số G7 + ĐB - 5 lô)**: 10k cược $\rightarrow$ 40k xác (4k/1k). Ăn $\times 72$.
+  * **Xỉu Chủ MB (3 số G6 + ĐB - 4 lô)**: 10k cược $\rightarrow$ 32k xác (Hệ số 3.2). Ăn $\times 620$ (Nguồn $\times 650$).
