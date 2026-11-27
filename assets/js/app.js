@@ -11,27 +11,64 @@ const AppState = {
   tickets: [],
   currentPage: 1,
   pageSize: 30, // Mặc định 30 dòng / trang
+  sortOrder: 'desc', // 'desc' = Mới nhất -> Cũ nhất ; 'asc' = Cũ nhất -> Mới nhất
   currentDetailIndex: null,
   currentDetailTab: 'khach',
   formDai: new Set(),
   isLoading: false
 };
 
-/** Sắp xếp vé từ ngày mới nhất đến cũ nhất */
-function sortTicketsByDateDesc(tickets) {
+/** Sắp xếp vé theo ngày (mặc định Mới nhất -> Cũ nhất) và theo rowId khi cùng ngày */
+function sortTickets(tickets, order = (AppState.sortOrder || 'desc')) {
   return tickets.sort((a, b) => {
     const da = Stations.parseDate(a.date);
     const db = Stations.parseDate(b.date);
-    if (!da && !db) return 0;
+    const idA = Number(a.rowId) || 0;
+    const idB = Number(b.rowId) || 0;
+
+    if (!da && !db) return order === 'desc' ? (idB - idA) : (idA - idB);
     if (!da) return 1;
     if (!db) return -1;
-    return db - da;
+
+    const diff = order === 'desc' ? (db.getTime() - da.getTime()) : (da.getTime() - db.getTime());
+    // Nếu cùng ngày -> sắp xếp theo rowId (vé nhập sau / mới hơn lên trước khi desc)
+    if (diff === 0) {
+      return order === 'desc' ? (idB - idA) : (idA - idB);
+    }
+    return diff;
   });
 }
+
+function sortTicketsByDateDesc(tickets) {
+  return sortTickets(tickets, AppState.sortOrder || 'desc');
+}
+window.sortTickets = sortTickets;
 window.sortTicketsByDateDesc = sortTicketsByDateDesc;
 
-// Khởi tạo khi DOM sẵn sàng
+/** Chuyển đổi qua lại giữa Sắp xếp Mới nhất <-> Cũ nhất */
+function toggleDateSort() {
+  AppState.sortOrder = (AppState.sortOrder === 'desc') ? 'asc' : 'desc';
+  AppState.currentPage = 1;
+  renderDashboard();
+  updateSortControlsUI();
+  showToast(AppState.sortOrder === 'desc' ? '📅 Đang sắp xếp: Ngày mới nhất ➜ Cũ nhất' : '📅 Đang sắp xếp: Ngày cũ nhất ➜ Mới nhất');
+}
+window.toggleDateSort = toggleDateSort;
+
+/** Cập nhật nhãn nút đổi chiều sắp xếp */
+function updateSortControlsUI() {
+  const isDesc = (AppState.sortOrder || 'desc') === 'desc';
+  const labelEl = document.getElementById('sortOrderLabel');
+  if (labelEl) {
+    labelEl.innerHTML = isDesc ? 'Mới nhất ➜ Cũ nhất ▼' : 'Cũ nhất ➜ Mới nhất ▲';
+    labelEl.className = isDesc ? 'text-emerald-700 font-bold' : 'text-indigo-700 font-bold';
+  }
+}
+window.updateSortControlsUI = updateSortControlsUI;
+
+// Khởi tạo khi DOM sẵn sàng (chỉ chạy trên trang dashboard chính)
 document.addEventListener('DOMContentLoaded', async () => {
+  if (!document.getElementById('tableBody')) return;
   initDateFilters();
   await loadDataFromSheetOrStorage();
   renderDashboard();
@@ -454,9 +491,17 @@ function renderDashboard() {
   tbody.innerHTML = '';
 
   if (thead) {
+    const isDesc = (AppState.sortOrder || 'desc') === 'desc';
+    const sortIcon = isDesc ? '▼' : '▲';
+    const sortTitle = isDesc ? 'Đang sắp xếp: Mới nhất ➜ Cũ nhất. Bấm để đổi sang Cũ nhất ➜ Mới nhất' : 'Đang sắp xếp: Cũ nhất ➜ Mới nhất. Bấm để đổi sang Mới nhất ➜ Cũ nhất';
     thead.innerHTML = `
-      <tr class="bg-slate-900 text-slate-100 font-bold text-xs uppercase tracking-wider">
-        <th class="py-3 px-3">Ngày</th>
+      <tr class="bg-slate-900 text-slate-100 font-bold text-xs uppercase tracking-wider select-none">
+        <th class="py-3 px-3 cursor-pointer hover:bg-slate-800 transition group" onclick="toggleDateSort()" title="${sortTitle}">
+          <div class="flex items-center gap-1.5">
+            <span>Ngày</span>
+            <span class="text-emerald-400 font-black text-xs group-hover:scale-125 transition inline-block">${sortIcon}</span>
+          </div>
+        </th>
         <th class="py-3 px-3">Khách Hàng</th>
         <th class="py-3 px-2 text-center">Miền / Đài</th>
         <th class="py-3 px-2 text-center">Loại Cược</th>
@@ -469,6 +514,7 @@ function renderDashboard() {
       </tr>
     `;
   }
+  updateSortControlsUI();
 
   if (filteredTickets.length === 0) {
     if (emptyNotice) emptyNotice.classList.remove('hidden');

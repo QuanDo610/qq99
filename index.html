@@ -199,6 +199,12 @@
             <input type="checkbox" id="chkViewAll" checked onchange="onDateRangeChange()" class="rounded text-emerald-600 focus:ring-0">
             <span>Xem tất cả ngày</span>
           </label>
+
+          <!-- Nút đổi chiều sắp xếp Ngày Mới Nhất / Cũ Nhất -->
+          <button type="button" id="btnSortOrder" onclick="toggleDateSort()" class="inline-flex items-center gap-1.5 text-xs text-slate-700 font-semibold cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 shadow-2xs transition active:scale-95" title="Bấm để đổi sắp xếp: Ngày mới nhất ↔ Cũ nhất">
+            <span>📅 Sắp xếp:</span>
+            <span id="sortOrderLabel" class="text-emerald-700 font-bold">Mới nhất ➜ Cũ nhất ▼</span>
+          </button>
         </div>
       </div>
 
@@ -754,12 +760,12 @@
   </div>
 
   <!-- LOAD JAVASCRIPT MODULES -->
-  <script src="assets/js/config.js"></script>
-  <script src="assets/js/stations.js"></script>
-  <script src="assets/js/calculator.js"></script>
-  <script src="assets/js/results.js"></script>
-  <script src="assets/js/googleSheet.js"></script>
-  <script src="assets/js/autoCheck.js"></script>
-  <script src="assets/js/app.js"></script>
+  <script src="assets/js/config.js?v=20261127_02"></script>
+  <script src="assets/js/stations.js?v=20261127_02"></script>
+  <script src="assets/js/calculator.js?v=20261127_02"></script>
+  <script src="assets/js/results.js?v=20261127_02"></script>
+  <script src="assets/js/googleSheet.js?v=20261127_02"></script>
+  <script src="assets/js/autoCheck.js?v=20261127_02"></script>
+  <script src="assets/js/app.js?v=20261127_02"></script>
 </body>
 </html>

@@ -4,12 +4,13 @@
 <body>
 <h2>LUCKY QQ99 - Kiểm Thử Trực Tiếp (Mở trực tiếp trên trình duyệt)</h2>
 <div id="summary">Đang chạy...</div><pre id="log"></pre><table id="t"></table>
-<script src="../assets/js/config.js"></script>
-<script src="../assets/js/stations.js"></script>
-<script src="../assets/js/calculator.js"></script>
-<script src="../assets/js/results.js"></script>
-<script src="../assets/js/googleSheet.js"></script>
-<script src="../assets/js/autoCheck.js"></script>
+<script src="../assets/js/config.js?v=20261127_02"></script>
+<script src="../assets/js/stations.js?v=20261127_02"></script>
+<script src="../assets/js/calculator.js?v=20261127_02"></script>
+<script src="../assets/js/results.js?v=20261127_02"></script>
+<script src="../assets/js/googleSheet.js?v=20261127_02"></script>
+<script src="../assets/js/autoCheck.js?v=20261127_02"></script>
+<script src="../assets/js/app.js?v=20261127_02"></script>
 <script>
 let pass = 0, fail = 0;
 const log = (m) => { document.getElementById('log').textContent += m + '\n'; };
@@ -42,6 +43,22 @@ function eq(name, got, want) {
     eq('parseNumbers 2 digits', Calculator.parseNumbers('8 80 9', 2), ['08', '80', '09']);
     eq('parseNumbers 3 digits', Calculator.parseNumbers('123 456 7', 3), ['123', '456', '007']);
     eq('parseNumbers 4 digits', Calculator.parseNumbers('1234 5678', 4), ['1234', '5678']);
+
+    // --- Sắp xếp vé theo ngày (Sort Desc / Asc) ---
+    const sampleTickets = [
+      { rowId: 2, date: '22/10/2026', player: 'A' },
+      { rowId: 3, date: '04/11/2026', player: 'B' },
+      { rowId: 32, date: '27/11/2026', player: 'C' },
+      { rowId: 33, date: '27/11/2026', player: 'D' }
+    ];
+    const sortedDesc = sortTickets([...sampleTickets], 'desc');
+    eq('Sort desc: mới nhất 27/11 rowId 33 lên đầu', sortedDesc[0].rowId, 33);
+    eq('Sort desc: mới nhất 27/11 rowId 32 thứ hai', sortedDesc[1].rowId, 32);
+    eq('Sort desc: cũ nhất 22/10 về cuối', sortedDesc[3].rowId, 2);
+
+    const sortedAsc = sortTickets([...sampleTickets], 'asc');
+    eq('Sort asc: cũ nhất 22/10 lên đầu', sortedAsc[0].rowId, 2);
+    eq('Sort asc: mới nhất 27/11 về cuối', sortedAsc[3].rowId, 33);
 
     // --- Công thức tiền (khớp ví dụ trong luật) ---
     const e1 = Calculator.enrichTicket({ date: '14/11/2026', player: 'A', mien: 'Nam', dai: 'TPHCM, Long An, Bình Phước', loaiCuoc: 'Bao Lô 2 số', so: '08 80 09 90', tien: 5000, trung: '' });
